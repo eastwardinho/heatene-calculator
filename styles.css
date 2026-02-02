@@ -77,16 +77,19 @@ body {
 }
 
 .logo {
-    font-size: 1.75rem;
-    font-weight: 700;
+    display: flex;
+    align-items: center;
 }
 
-.logo-heat {
-    color: var(--primary);
+.logo-img {
+    height: 40px;
+    width: auto;
 }
 
-.logo-ene {
-    color: var(--secondary);
+@media (min-width: 640px) {
+    .logo-img {
+        height: 48px;
+    }
 }
 
 .header-subtitle {
