@@ -1487,6 +1487,17 @@ body {
     margin: var(--space-4) 0;
 }
 
+.modal-content {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: auto;
+    box-shadow: var(--shadow-xl);
+    animation: slideUp var(--transition-base) ease;
+}
+
 .quick-calc-modal {
     max-width: 500px;
 }
