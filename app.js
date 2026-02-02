@@ -15,8 +15,8 @@ let state = {
 
 // ============ CONSTANTS ============
 
-// HeatENE specs: 21W per linear foot (70W per meter)
-const WATTS_PER_FOOT = 21;
+// HeatENE specs (Standard version as default)
+const WATTS_PER_FOOT = 21;  // Standard: 70W per meter
 const PRICE_PER_FOOT = 17.50;
 
 // Average electricity rate (US)
@@ -42,44 +42,77 @@ const ERA_MULTIPLIERS = {
 
 // Current heating system costs ($ per kWh equivalent delivered heat)
 // Based on US average fuel prices and typical system efficiencies
+// Note: These reflect real-world performance, not lab conditions
 const HEATING_COSTS = {
     gas: {
         name: 'Gas Boiler',
         icon: '🔥',
-        costPerKwh: 0.06,      // ~$1.50/therm at 85% efficiency
-        efficiency: 0.85
+        costPerKwh: 0.07,      // ~$1.50/therm at 80% real-world efficiency
+        efficiency: 0.80,
+        maintenance: 200       // Annual maintenance cost
     },
     oil: {
         name: 'Oil Boiler',
         icon: '🛢️',
-        costPerKwh: 0.12,      // ~$4/gallon at 80% efficiency
-        efficiency: 0.80
+        costPerKwh: 0.14,      // ~$4/gallon at 75% real-world efficiency
+        efficiency: 0.75,
+        maintenance: 300
     },
     heatpump: {
         name: 'Heat Pump',
         icon: '♨️',
-        costPerKwh: 0.05,      // COP of ~3.0 with $0.16/kWh electricity
-        efficiency: 3.0
+        costPerKwh: 0.08,      // Real-world COP ~2.0 (drops in cold weather)
+        efficiency: 2.0,
+        maintenance: 200
     },
     electric: {
         name: 'Electric Radiators',
         icon: '⚡',
-        costPerKwh: 0.16,      // 100% efficient but direct electric
-        efficiency: 1.0
+        costPerKwh: 0.16,      // 100% efficient but no zonal control
+        efficiency: 1.0,
+        maintenance: 0
     },
     baseboard: {
         name: 'Baseboard Heaters',
         icon: '📏',
-        costPerKwh: 0.16,      // Same as electric radiators
-        efficiency: 1.0
+        costPerKwh: 0.16,      // Traditional baseboards, whole-house heating
+        efficiency: 1.0,
+        maintenance: 0
     },
     wood: {
         name: 'Wood/Pellet',
         icon: '🪵',
-        costPerKwh: 0.08,      // ~$250/cord at 70% efficiency
-        efficiency: 0.70
+        costPerKwh: 0.10,      // ~$250/cord at 65% real-world efficiency
+        efficiency: 0.65,
+        maintenance: 150
     }
 };
+
+// HeatENE versions
+const HEATENE_VERSIONS = {
+    eco: {
+        name: 'HeatENE Eco',
+        wattsPerFoot: 14,       // Lower output for mild climates
+        pricePerFoot: 14.50,
+        description: 'Best for mild climates & well-insulated homes'
+    },
+    standard: {
+        name: 'HeatENE Standard',
+        wattsPerFoot: 21,       // 70W per meter
+        pricePerFoot: 17.50,
+        description: 'Ideal for most homes'
+    },
+    performance: {
+        name: 'HeatENE Performance',
+        wattsPerFoot: 30,       // Higher output for cold climates
+        pricePerFoot: 21.50,
+        description: 'Best for cold climates & older homes'
+    }
+};
+
+// HeatENE efficiency advantages
+const HEATENE_ZONAL_SAVINGS = 0.25;  // 25% savings from only heating occupied rooms
+const HEATENE_THERMOSTAT_EFFICIENCY = 0.90;  // Precise control reduces waste
 
 // Typical room breakdown based on bedroom/bathroom count
 // Returns array of {name, icon, sqft, pctOfHome}
@@ -331,15 +364,30 @@ function calculate() {
     // Assume 6 hours/day average, 180 heating days, 50% thermostat duty cycle
     const annualKwh = (wattsNeeded / 1000) * 6 * 180 * 0.5;
     
-    // HeatENE annual cost (99.69% efficient, essentially 100%)
-    const heateneAnnualCost = annualKwh * ELECTRICITY_RATE;
-    
-    // Current heating annual cost
+    // Current heating annual cost (whole-house heating, no zonal control)
     const currentSystem = HEATING_COSTS[state.currentHeating];
-    const currentAnnualCost = annualKwh * currentSystem.costPerKwh;
+    const currentAnnualCost = (annualKwh * currentSystem.costPerKwh) + currentSystem.maintenance;
     
-    // Calculate savings (can be negative if current system is cheaper)
+    // HeatENE annual cost with advantages:
+    // - Zonal control: only heat rooms you're using (25% savings)
+    // - Precise thermostat: reduces overshoot and waste
+    // - Zero maintenance
+    const heateneEffectiveKwh = annualKwh * (1 - HEATENE_ZONAL_SAVINGS) * HEATENE_THERMOSTAT_EFFICIENCY;
+    const heateneAnnualCost = heateneEffectiveKwh * ELECTRICITY_RATE;
+    
+    // Calculate savings
     const annualSavings = currentAnnualCost - heateneAnnualCost;
+    
+    // Calculate for all versions
+    const versions = Object.entries(HEATENE_VERSIONS).map(([key, version]) => {
+        const versionFeet = Math.ceil(wattsNeeded / version.wattsPerFoot);
+        return {
+            key,
+            ...version,
+            feet: versionFeet,
+            equipmentCost: versionFeet * version.pricePerFoot
+        };
+    });
     
     // Display results
     displayResults({
@@ -350,7 +398,8 @@ function calculate() {
         heateneAnnualCost,
         currentAnnualCost,
         annualSavings,
-        currentSystem
+        currentSystem,
+        versions
     });
 }
 
@@ -421,6 +470,19 @@ function displayResults(results) {
         savingsRow.classList.remove('positive', 'negative');
         savingsRow.innerHTML = `<span class="savings-text">Similar running costs — but HeatENE offers zero maintenance and 10-year warranty.</span>`;
     }
+    
+    // Version options
+    const versionsHtml = results.versions.map(v => `
+        <div class="version-card ${v.key === 'standard' ? 'recommended' : ''}">
+            ${v.key === 'standard' ? '<span class="version-badge">Recommended</span>' : ''}
+            <div class="version-name">${v.name}</div>
+            <div class="version-feet">${v.feet} ft</div>
+            <div class="version-price">$${Math.round(v.equipmentCost).toLocaleString()}</div>
+            <div class="version-desc">${v.description}</div>
+        </div>
+    `).join('');
+    
+    document.getElementById('versionOptions').innerHTML = versionsHtml;
 }
 
 // ============ INITIALIZE ============
