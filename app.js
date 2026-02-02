@@ -229,19 +229,49 @@ const HEAT_LOSS = {
     }
 };
 
-// HeatENE Panel options (by market)
+// HeatENE Skirting Specifications
+// Product: Graphene heating film at 580W/m², outputs 70W per linear metre of skirting
+const HEATENE_SPECS = {
+    wattsPerMetre: 70,           // W per linear metre of skirting
+    filmRating: 580,             // W/m² of the graphene film
+    maxSurfaceTemp: 55,          // °C (child safe)
+    efficiency: 0.9969,          // 99.69% thermal conversion
+    profileHeight: 0.139,        // metres (139mm)
+    profileDepth: 0.018,         // metres (18mm)
+    maxLength: 6,                // metres per piece
+    warranty: 10                 // years
+};
+
+// Pricing per metre (by market)
+const HEATENE_PRICING = {
+    uk: {
+        pricePerMetre: 45,       // £ per linear metre
+        installPerMetre: 15,     // £ installation per metre
+        thermostat: 85,          // £ per room thermostat
+        currency: '£'
+    },
+    us: {
+        pricePerMetre: 57,       // $ per linear metre (~£45 × 1.27)
+        installPerMetre: 19,     // $ installation per metre
+        thermostat: 108,         // $ per room thermostat
+        currency: '$'
+    }
+};
+
+// Legacy panel mappings (for backwards compatibility)
+// These convert to equivalent metres of skirting
 const PANELS = {
     uk: [
-        { wattage: 400, price: 280, name: 'HeatENE 400' },
-        { wattage: 600, price: 350, name: 'HeatENE 600' },
-        { wattage: 800, price: 420, name: 'HeatENE 800' },
-        { wattage: 1000, price: 500, name: 'HeatENE 1000' }
+        { wattage: 400, price: 280, name: 'HeatENE 400', metres: 5.7 },
+        { wattage: 600, price: 350, name: 'HeatENE 600', metres: 8.6 },
+        { wattage: 800, price: 420, name: 'HeatENE 800', metres: 11.4 },
+        { wattage: 1000, price: 500, name: 'HeatENE 1000', metres: 14.3 }
     ],
     us: [
-        { wattage: 400, price: 355, name: 'HeatENE 400' },  // ~£280 × 1.27
-        { wattage: 600, price: 445, name: 'HeatENE 600' },  // ~£350 × 1.27
-        { wattage: 800, price: 535, name: 'HeatENE 800' },  // ~£420 × 1.27
-        { wattage: 1000, price: 635, name: 'HeatENE 1000' } // ~£500 × 1.27
+        { wattage: 400, price: 355, name: 'HeatENE 400', metres: 5.7 },
+        { wattage: 600, price: 445, name: 'HeatENE 600', metres: 8.6 },
+        { wattage: 800, price: 535, name: 'HeatENE 800', metres: 11.4 },
+        { wattage: 1000, price: 635, name: 'HeatENE 1000', metres: 14.3 }
     ]
 };
 
@@ -1061,13 +1091,27 @@ function calculateRoomHeat(room) {
     calc.steps.push(`Room area: ${room.area.toFixed(1)} m²`);
     calc.steps.push(`Total heat requirement: ${totalWattage.toFixed(0)} W`);
     
-    // Select appropriate panel(s)
+    // Calculate metres of HeatENE skirting needed
+    const metresRequired = totalWattage / HEATENE_SPECS.wattsPerMetre;
+    calc.steps.push(`HeatENE output: ${HEATENE_SPECS.wattsPerMetre}W per metre`);
+    calc.steps.push(`Skirting required: ${metresRequired.toFixed(1)} linear metres`);
+    
+    // Calculate room perimeter for reference
+    // Assuming roughly square room: perimeter ≈ 4 × √area
+    const estimatedPerimeter = 4 * Math.sqrt(room.area);
+    const perimeterCoverage = (metresRequired / estimatedPerimeter * 100).toFixed(0);
+    calc.steps.push(`Estimated room perimeter: ${estimatedPerimeter.toFixed(1)}m`);
+    calc.steps.push(`Wall coverage needed: ~${perimeterCoverage}%`);
+    
+    // Select appropriate panel(s) for backwards compatibility
     const panel = selectPanel(totalWattage);
-    calc.steps.push(`Recommended panel: ${panel.name} (${panel.wattage}W)`);
+    calc.steps.push(`Equivalent panel: ${panel.name} (${panel.wattage}W)`);
     
     return {
         heatLoss: heatLossPerM2,
         recommendedWattage: panel.wattage,
+        metresRequired: metresRequired,
+        perimeterCoverage: parseFloat(perimeterCoverage),
         panel,
         calculation: calc.steps.join('\n')
     };
