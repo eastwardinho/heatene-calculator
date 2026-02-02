@@ -117,6 +117,37 @@
                     </div>
                 </div>
 
+                <!-- Question 6: Current Heating -->
+                <div class="question" id="q6">
+                    <label class="question-label">6. What's your current heating system?</label>
+                    <div class="heating-cards">
+                        <div class="heating-card" data-value="gas" onclick="selectHeating(this)">
+                            <span class="card-icon">🔥</span>
+                            <span class="card-title">Gas Boiler</span>
+                        </div>
+                        <div class="heating-card" data-value="oil" onclick="selectHeating(this)">
+                            <span class="card-icon">🛢️</span>
+                            <span class="card-title">Oil Boiler</span>
+                        </div>
+                        <div class="heating-card" data-value="heatpump" onclick="selectHeating(this)">
+                            <span class="card-icon">♨️</span>
+                            <span class="card-title">Heat Pump</span>
+                        </div>
+                        <div class="heating-card" data-value="electric" onclick="selectHeating(this)">
+                            <span class="card-icon">⚡</span>
+                            <span class="card-title">Electric Radiators</span>
+                        </div>
+                        <div class="heating-card" data-value="baseboard" onclick="selectHeating(this)">
+                            <span class="card-icon">📏</span>
+                            <span class="card-title">Baseboard Heaters</span>
+                        </div>
+                        <div class="heating-card" data-value="wood" onclick="selectHeating(this)">
+                            <span class="card-icon">🪵</span>
+                            <span class="card-title">Wood/Pellet</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Calculate Button -->
                 <div class="calculate-section">
                     <button class="btn-calculate" onclick="calculate()">
@@ -166,17 +197,34 @@
                     </div>
                 </div>
 
-                <!-- Savings Section -->
+                <!-- Savings Comparison Section -->
                 <div class="savings-section">
-                    <h3>Potential Savings</h3>
-                    <div class="savings-grid">
-                        <div class="savings-item">
-                            <span class="savings-icon">⚡</span>
-                            <div class="savings-content">
-                                <span class="savings-value" id="annualRunCost">$0</span>
-                                <span class="savings-label">Est. Annual Running Cost</span>
+                    <h3>Annual Cost Comparison</h3>
+                    <div class="comparison-box">
+                        <div class="comparison-row current">
+                            <div class="comparison-label">
+                                <span class="comparison-icon" id="currentHeatingIcon">🔥</span>
+                                <span id="currentHeatingName">Current Heating</span>
                             </div>
+                            <span class="comparison-value" id="currentAnnualCost">$0/yr</span>
                         </div>
+                        <div class="comparison-row heatene">
+                            <div class="comparison-label">
+                                <span class="comparison-icon">🟧</span>
+                                <span>HeatENE</span>
+                            </div>
+                            <span class="comparison-value" id="heateneAnnualCost">$0/yr</span>
+                        </div>
+                        <div class="comparison-savings" id="savingsRow">
+                            <span class="savings-text">You could save <strong id="annualSavings">$0</strong> per year!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benefits Section -->
+                <div class="benefits-section">
+                    <h3>HeatENE Benefits</h3>
+                    <div class="savings-grid">
                         <div class="savings-item">
                             <span class="savings-icon">🌱</span>
                             <div class="savings-content">

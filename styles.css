@@ -210,6 +210,60 @@ body {
     margin-top: 0.125rem;
 }
 
+/* Heating Type Cards */
+.heating-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+@media (min-width: 540px) {
+    .heating-cards {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .heating-cards {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+.heating-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.875rem 0.5rem;
+    background: var(--white);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.heating-card:hover {
+    border-color: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.heating-card.selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(241, 90, 41, 0.05) 0%, rgba(241, 90, 41, 0.1) 100%);
+}
+
+.heating-card .card-icon {
+    font-size: 1.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.heating-card .card-title {
+    font-weight: 500;
+    font-size: 0.75rem;
+    color: var(--gray-700);
+}
+
 /* Form Inputs */
 .input-wrapper {
     position: relative;
@@ -582,6 +636,95 @@ body {
 .savings-label {
     font-size: 0.75rem;
     color: var(--gray-500);
+}
+
+/* Cost Comparison Box */
+.comparison-box {
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.comparison-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 0.5rem;
+}
+
+.comparison-row.current {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+}
+
+.comparison-row.heatene {
+    background: linear-gradient(135deg, rgba(241, 90, 41, 0.1) 0%, rgba(241, 90, 41, 0.15) 100%);
+    border: 2px solid var(--primary);
+}
+
+.comparison-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.comparison-icon {
+    font-size: 1.25rem;
+}
+
+.comparison-value {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--gray-800);
+}
+
+.comparison-row.heatene .comparison-value {
+    color: var(--primary);
+}
+
+.comparison-savings {
+    background: var(--success);
+    color: var(--white);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.comparison-savings.positive {
+    background: var(--success);
+}
+
+.comparison-savings.negative {
+    background: var(--gray-500);
+}
+
+.comparison-savings .savings-text {
+    font-size: 0.9rem;
+}
+
+.comparison-savings strong {
+    font-size: 1.1rem;
+}
+
+/* Benefits Section */
+.benefits-section {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.benefits-section h3 {
+    font-size: 1rem;
+    color: var(--secondary);
+    margin: 0 0 1rem;
 }
 
 /* Calculation Info */

@@ -9,7 +9,8 @@ let state = {
     era: null,
     bedrooms: null,
     bathrooms: null,
-    sqft: null
+    sqft: null,
+    currentHeating: null
 };
 
 // ============ CONSTANTS ============
@@ -37,6 +38,47 @@ const ERA_MULTIPLIERS = {
     '1950-1980': 1.10,  // Post-war - improving standards
     '1980-2000': 1.00,  // Modern - decent insulation
     '2000+': 0.85       // Contemporary - good insulation
+};
+
+// Current heating system costs ($ per kWh equivalent delivered heat)
+// Based on US average fuel prices and typical system efficiencies
+const HEATING_COSTS = {
+    gas: {
+        name: 'Gas Boiler',
+        icon: '🔥',
+        costPerKwh: 0.06,      // ~$1.50/therm at 85% efficiency
+        efficiency: 0.85
+    },
+    oil: {
+        name: 'Oil Boiler',
+        icon: '🛢️',
+        costPerKwh: 0.12,      // ~$4/gallon at 80% efficiency
+        efficiency: 0.80
+    },
+    heatpump: {
+        name: 'Heat Pump',
+        icon: '♨️',
+        costPerKwh: 0.05,      // COP of ~3.0 with $0.16/kWh electricity
+        efficiency: 3.0
+    },
+    electric: {
+        name: 'Electric Radiators',
+        icon: '⚡',
+        costPerKwh: 0.16,      // 100% efficient but direct electric
+        efficiency: 1.0
+    },
+    baseboard: {
+        name: 'Baseboard Heaters',
+        icon: '📏',
+        costPerKwh: 0.16,      // Same as electric radiators
+        efficiency: 1.0
+    },
+    wood: {
+        name: 'Wood/Pellet',
+        icon: '🪵',
+        costPerKwh: 0.08,      // ~$250/cord at 70% efficiency
+        efficiency: 0.70
+    }
 };
 
 // Typical room breakdown based on bedroom/bathroom count
@@ -140,6 +182,17 @@ function selectNumber(field, value, element) {
     element.classList.add('selected');
 }
 
+function selectHeating(element) {
+    // Remove selection from all
+    document.querySelectorAll('.heating-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Select clicked
+    element.classList.add('selected');
+    state.currentHeating = element.dataset.value;
+}
+
 function toggleCalcInfo() {
     const details = document.getElementById('calcDetails');
     const icon = document.getElementById('toggleIcon');
@@ -160,11 +213,13 @@ function startOver() {
         era: null,
         bedrooms: null,
         bathrooms: null,
-        sqft: null
+        sqft: null,
+        currentHeating: null
     };
     
     // Reset UI
     document.querySelectorAll('.housing-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.heating-card').forEach(c => c.classList.remove('selected'));
     document.querySelectorAll('.era-btn').forEach(b => b.classList.remove('selected'));
     document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('sqft').value = '';
@@ -221,6 +276,12 @@ function validate() {
         state.sqft = sqft;
     }
     
+    // Current heating
+    if (!state.currentHeating) {
+        valid = false;
+        showError('q6', 'Please select your current heating system');
+    }
+    
     return valid;
 }
 
@@ -266,10 +327,19 @@ function calculate() {
         feet: Math.ceil((room.sqft / state.sqft) * totalFeet)
     }));
     
-    // Estimate annual running cost
+    // Estimate annual heat energy needed (kWh)
     // Assume 6 hours/day average, 180 heating days, 50% thermostat duty cycle
     const annualKwh = (wattsNeeded / 1000) * 6 * 180 * 0.5;
-    const annualCost = annualKwh * ELECTRICITY_RATE;
+    
+    // HeatENE annual cost (99.69% efficient, essentially 100%)
+    const heateneAnnualCost = annualKwh * ELECTRICITY_RATE;
+    
+    // Current heating annual cost
+    const currentSystem = HEATING_COSTS[state.currentHeating];
+    const currentAnnualCost = annualKwh * currentSystem.costPerKwh;
+    
+    // Calculate savings (can be negative if current system is cheaper)
+    const annualSavings = currentAnnualCost - heateneAnnualCost;
     
     // Display results
     displayResults({
@@ -277,7 +347,10 @@ function calculate() {
         totalWatts: Math.round(wattsNeeded),
         equipmentCost,
         rooms: roomsWithFeet,
-        annualCost
+        heateneAnnualCost,
+        currentAnnualCost,
+        annualSavings,
+        currentSystem
     });
 }
 
@@ -325,8 +398,29 @@ function displayResults(results) {
     
     document.getElementById('roomBreakdown').innerHTML = breakdownHtml;
     
-    // Annual running cost
-    document.getElementById('annualRunCost').textContent = '$' + Math.round(results.annualCost).toLocaleString() + '/yr';
+    // Cost comparison
+    document.getElementById('currentHeatingIcon').textContent = results.currentSystem.icon;
+    document.getElementById('currentHeatingName').textContent = results.currentSystem.name;
+    document.getElementById('currentAnnualCost').textContent = '$' + Math.round(results.currentAnnualCost).toLocaleString() + '/yr';
+    document.getElementById('heateneAnnualCost').textContent = '$' + Math.round(results.heateneAnnualCost).toLocaleString() + '/yr';
+    
+    // Savings display
+    const savingsRow = document.getElementById('savingsRow');
+    const annualSavingsEl = document.getElementById('annualSavings');
+    
+    if (results.annualSavings > 0) {
+        savingsRow.classList.remove('negative');
+        savingsRow.classList.add('positive');
+        annualSavingsEl.textContent = '$' + Math.round(results.annualSavings).toLocaleString();
+        savingsRow.innerHTML = `<span class="savings-text">You could save <strong id="annualSavings">$${Math.round(results.annualSavings).toLocaleString()}</strong> per year!</span>`;
+    } else if (results.annualSavings < 0) {
+        savingsRow.classList.remove('positive');
+        savingsRow.classList.add('negative');
+        savingsRow.innerHTML = `<span class="savings-text">HeatENE costs <strong>$${Math.round(Math.abs(results.annualSavings)).toLocaleString()}</strong> more per year, but offers zero maintenance and 10-year warranty.</span>`;
+    } else {
+        savingsRow.classList.remove('positive', 'negative');
+        savingsRow.innerHTML = `<span class="savings-text">Similar running costs — but HeatENE offers zero maintenance and 10-year warranty.</span>`;
+    }
 }
 
 // ============ INITIALIZE ============
