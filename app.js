@@ -981,20 +981,22 @@ function deleteRoom(index) {
 
 function renderRoomList() {
     const list = document.getElementById('roomList');
-    const empty = document.getElementById('emptyRooms');
     const summary = document.getElementById('roomSummary');
     const continueBtn = document.getElementById('step2Continue');
     
     if (state.rooms.length === 0) {
-        list.innerHTML = '';
-        list.appendChild(empty);
-        empty.style.display = 'block';
+        list.innerHTML = `
+            <div class="empty-state" id="emptyRooms">
+                <span class="empty-icon">🏠</span>
+                <p>No rooms added yet</p>
+                <p class="empty-hint">Click "Add Room" to get started</p>
+            </div>
+        `;
         summary.style.display = 'none';
         continueBtn.disabled = true;
         return;
     }
     
-    empty.style.display = 'none';
     continueBtn.disabled = false;
     
     list.innerHTML = state.rooms.map((room, i) => {
