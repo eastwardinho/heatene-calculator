@@ -890,11 +890,12 @@ function applyRoomPreset() {
 }
 
 function saveRoom() {
-    const type = document.getElementById('roomType').value;
-    if (!type) {
-        alert('Please select a room type');
-        return;
-    }
+    try {
+        const type = document.getElementById('roomType').value;
+        if (!type) {
+            alert('Please select a room type');
+            return;
+        }
     
     const customName = document.getElementById('roomName').value.trim();
     const sizeType = document.querySelector('#sizeInputType .toggle-btn.active').dataset.value;
@@ -964,6 +965,10 @@ function saveRoom() {
     saveState();
     renderRoomList();
     closeRoomModal();
+    } catch (error) {
+        console.error('Error saving room:', error);
+        alert('Error saving room: ' + error.message);
+    }
 }
 
 function deleteRoom(index) {
