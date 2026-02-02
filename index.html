@@ -89,10 +89,24 @@
                     </div>
                 </div>
 
-                <div class="step-actions" style="justify-content: center;">
-                    <button class="btn btn-primary btn-large" id="startCalculatorBtn" onclick="startCalculator()" disabled>
-                        Get Started →
-                    </button>
+                <!-- Path Selection (shown after market selected) -->
+                <div class="path-selector" id="pathSelector" style="display: none;">
+                    <label class="form-label">What would you like to do?</label>
+                    <div class="path-cards">
+                        <div class="path-card" onclick="openQuickCalcDirect()">
+                            <span class="path-icon">⚡</span>
+                            <span class="path-title">Quick Single Room</span>
+                            <span class="path-desc">Instant estimate for one room — no details needed</span>
+                        </div>
+                        <div class="path-card" onclick="startCalculator()">
+                            <span class="path-icon">🏠</span>
+                            <span class="path-title">Full Home Calculator</span>
+                            <span class="path-desc">Complete assessment with savings & report</span>
+                        </div>
+                    </div>
+                    <div class="reset-link">
+                        <a href="#" onclick="resetCalculator(); return false;">↺ Start Over</a>
+                    </div>
                 </div>
             </section>
 
@@ -373,9 +387,6 @@
                     <div class="room-buttons">
                         <button class="btn btn-add-room" onclick="openRoomModal()">
                             <span class="plus-icon">+</span> Add Room
-                        </button>
-                        <button class="btn btn-quick-calc" onclick="openQuickCalc()">
-                            ⚡ Quick Single Room
                         </button>
                     </div>
 
@@ -885,6 +896,14 @@
                         <div class="quick-result-item highlight">
                             <span class="result-value" id="qcCost">-</span>
                             <span class="result-label">Estimated cost</span>
+                        </div>
+                    </div>
+                    <div class="mode-explanation">
+                        <div class="mode-item">
+                            <strong>⚡ Performance</strong> — All available walls for fastest heating
+                        </div>
+                        <div class="mode-item">
+                            <strong>🌿 Eco</strong> — 2 longest opposite walls for good convection at lower cost
                         </div>
                     </div>
                     <p class="quick-calc-note">*Based on average insulation. For accurate quote, use full calculator.</p>

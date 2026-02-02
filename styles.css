@@ -1692,3 +1692,98 @@ body {
         flex: 1;
     }
 }
+
+/* Path Selector Cards (Step 0) */
+.path-selector {
+    margin-top: var(--space-6);
+}
+
+.path-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    max-width: 600px;
+    margin: var(--space-4) auto 0;
+}
+
+.path-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--space-6);
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.path-card:hover {
+    border-color: var(--primary-500);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.path-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--space-3);
+}
+
+.path-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--space-2);
+}
+
+.path-desc {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    line-height: 1.4;
+}
+
+@media (max-width: 500px) {
+    .path-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Reset Link */
+.reset-link {
+    text-align: center;
+    margin-top: var(--space-4);
+}
+
+.reset-link a {
+    color: var(--gray-500);
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.reset-link a:hover {
+    color: var(--gray-700);
+    text-decoration: underline;
+}
+
+/* Mode Explanation in Quick Calc */
+.mode-explanation {
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin: var(--space-4) 0;
+    font-size: 0.85rem;
+}
+
+.mode-item {
+    padding: var(--space-2) 0;
+    color: var(--gray-700);
+}
+
+.mode-item:first-child {
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.mode-item strong {
+    color: var(--gray-900);
+}
