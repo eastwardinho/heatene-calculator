@@ -85,19 +85,20 @@ function saveState() {
 
 // ============ CONSTANTS & DATA ============
 
-// Room type configurations
+// Room type configurations with wall availability
+// wallAvailability = percentage of perimeter that can have skirting (accounts for doors, fixtures, etc.)
 const ROOM_PRESETS = {
-    living: { icon: '🛋️', name: 'Living Room', tempTarget: 21, defaultSize: 'large' },
-    bedroom: { icon: '🛏️', name: 'Bedroom', tempTarget: 18, defaultSize: 'medium' },
-    'master-bedroom': { icon: '🛏️', name: 'Master Bedroom', tempTarget: 18, defaultSize: 'large' },
-    kitchen: { icon: '🍳', name: 'Kitchen', tempTarget: 18, defaultSize: 'medium' },
-    bathroom: { icon: '🚿', name: 'Bathroom', tempTarget: 22, defaultSize: 'small' },
-    office: { icon: '💻', name: 'Home Office', tempTarget: 20, defaultSize: 'small' },
-    dining: { icon: '🍽️', name: 'Dining Room', tempTarget: 20, defaultSize: 'medium' },
-    hallway: { icon: '🚪', name: 'Hallway', tempTarget: 16, defaultSize: 'small' },
-    conservatory: { icon: '🌿', name: 'Conservatory', tempTarget: 18, defaultSize: 'large' },
-    utility: { icon: '🧺', name: 'Utility Room', tempTarget: 15, defaultSize: 'small' },
-    other: { icon: '📦', name: 'Other', tempTarget: 19, defaultSize: 'medium' }
+    living: { icon: '🛋️', name: 'Living Room', tempTarget: 21, defaultSize: 'large', wallAvailability: 0.75 },
+    bedroom: { icon: '🛏️', name: 'Bedroom', tempTarget: 18, defaultSize: 'medium', wallAvailability: 0.85 },
+    'master-bedroom': { icon: '🛏️', name: 'Master Bedroom', tempTarget: 18, defaultSize: 'large', wallAvailability: 0.80 },
+    kitchen: { icon: '🍳', name: 'Kitchen', tempTarget: 18, defaultSize: 'medium', wallAvailability: 0.50 },
+    bathroom: { icon: '🚿', name: 'Bathroom', tempTarget: 22, defaultSize: 'small', wallAvailability: 0.40 },
+    office: { icon: '💻', name: 'Home Office', tempTarget: 20, defaultSize: 'small', wallAvailability: 0.80 },
+    dining: { icon: '🍽️', name: 'Dining Room', tempTarget: 20, defaultSize: 'medium', wallAvailability: 0.80 },
+    hallway: { icon: '🚪', name: 'Hallway', tempTarget: 16, defaultSize: 'small', wallAvailability: 0.60 },
+    conservatory: { icon: '🌿', name: 'Conservatory', tempTarget: 18, defaultSize: 'large', wallAvailability: 0.30 },
+    utility: { icon: '🧺', name: 'Utility Room', tempTarget: 15, defaultSize: 'small', wallAvailability: 0.60 },
+    other: { icon: '📦', name: 'Other', tempTarget: 19, defaultSize: 'medium', wallAvailability: 0.70 }
 };
 
 // Size presets in m²
@@ -955,6 +956,18 @@ function saveRoom() {
     room.recommendedWattage = calc.recommendedWattage;
     room.panel = calc.panel;
     room.calculation = calc.calculation;
+    // Wall availability and installation options
+    room.estimatedPerimeter = calc.estimatedPerimeter;
+    room.availableWallLength = calc.availableWallLength;
+    room.wallAvailability = calc.wallAvailability;
+    room.hasEnoughWall = calc.hasEnoughWall;
+    room.metresIdeal = calc.metresIdeal;
+    room.metresPerformance = calc.metresPerformance;
+    room.wattsPerformance = calc.wattsPerformance;
+    room.coveragePerformance = calc.coveragePerformance;
+    room.metresEco = calc.metresEco;
+    room.wattsEco = calc.wattsEco;
+    room.coverageEco = calc.coverageEco;
     
     if (state.editingRoomIndex !== null) {
         state.rooms[state.editingRoomIndex] = room;
@@ -1003,17 +1016,26 @@ function renderRoomList() {
         const preset = ROOM_PRESETS[room.type];
         const name = room.customName || preset.name;
         const areaDisplay = formatArea(room.area);
+        const metresPerf = room.metresPerformance ? room.metresPerformance.toFixed(1) : '-';
+        const metresEco = room.metresEco ? room.metresEco.toFixed(1) : '-';
+        const wallWarning = room.hasEnoughWall === false ? '<span class="wall-warning" title="Limited wall space">⚠️</span>' : '';
         
         return `
             <div class="room-card">
                 <div class="room-icon">${preset.icon}</div>
                 <div class="room-info">
-                    <div class="room-title">${name}</div>
-                    <div class="room-details">${areaDisplay} • ${room.externalWalls} external wall${room.externalWalls !== 1 ? 's' : ''}</div>
+                    <div class="room-title">${name} ${wallWarning}</div>
+                    <div class="room-details">${areaDisplay} • ${room.availableWallLength ? room.availableWallLength.toFixed(1) + 'm available' : room.externalWalls + ' external walls'}</div>
                 </div>
-                <div class="room-wattage">
-                    <div class="room-wattage-value">${room.recommendedWattage}W</div>
-                    <div class="room-wattage-label">${room.panel.name}</div>
+                <div class="room-options">
+                    <div class="room-option performance">
+                        <span class="option-label">⚡ Performance</span>
+                        <span class="option-value">${metresPerf}m</span>
+                    </div>
+                    <div class="room-option eco">
+                        <span class="option-label">🌿 Eco</span>
+                        <span class="option-value">${metresEco}m</span>
+                    </div>
                 </div>
                 <div class="room-actions">
                     <button onclick="openRoomModal(${i})" title="Edit">✏️</button>
@@ -1093,32 +1115,66 @@ function calculateRoomHeat(room) {
     
     calc.steps.push(`Heat loss per m²: ${heatLossPerM2.toFixed(1)} W/m²`);
     
-    // Total wattage needed
+    // Total wattage needed for full heating
     const totalWattage = heatLossPerM2 * room.area;
     calc.steps.push(`Room area: ${room.area.toFixed(1)} m²`);
     calc.steps.push(`Total heat requirement: ${totalWattage.toFixed(0)} W`);
     
-    // Calculate metres of HeatENE skirting needed
-    const metresRequired = totalWattage / HEATENE_SPECS.wattsPerMetre;
-    calc.steps.push(`HeatENE output: ${HEATENE_SPECS.wattsPerMetre}W per metre`);
-    calc.steps.push(`Skirting required: ${metresRequired.toFixed(1)} linear metres`);
-    
-    // Calculate room perimeter for reference
-    // Assuming roughly square room: perimeter ≈ 4 × √area
+    // Calculate room perimeter and available wall length
     const estimatedPerimeter = 4 * Math.sqrt(room.area);
-    const perimeterCoverage = (metresRequired / estimatedPerimeter * 100).toFixed(0);
-    calc.steps.push(`Estimated room perimeter: ${estimatedPerimeter.toFixed(1)}m`);
-    calc.steps.push(`Wall coverage needed: ~${perimeterCoverage}%`);
+    const roomPreset = ROOM_PRESETS[room.type] || ROOM_PRESETS.other;
+    const wallAvailability = roomPreset.wallAvailability;
+    const availableWallLength = estimatedPerimeter * wallAvailability;
+    
+    calc.steps.push(`--- Wall Availability ---`);
+    calc.steps.push(`Estimated perimeter: ${estimatedPerimeter.toFixed(1)}m`);
+    calc.steps.push(`${roomPreset.name} usable walls: ${(wallAvailability * 100).toFixed(0)}%`);
+    calc.steps.push(`Available wall length: ${availableWallLength.toFixed(1)}m`);
+    
+    // Calculate metres of HeatENE skirting needed (ideal)
+    const metresIdeal = totalWattage / HEATENE_SPECS.wattsPerMetre;
+    
+    // PERFORMANCE MODE: Use all available walls
+    const metresPerformance = Math.min(metresIdeal, availableWallLength);
+    const wattsPerformance = metresPerformance * HEATENE_SPECS.wattsPerMetre;
+    const coveragePerformance = (wattsPerformance / totalWattage * 100);
+    
+    // ECO MODE: Use ~50% of available walls (2 opposite walls)
+    const metresEco = availableWallLength * 0.5;
+    const wattsEco = metresEco * HEATENE_SPECS.wattsPerMetre;
+    const coverageEco = (wattsEco / totalWattage * 100);
+    
+    calc.steps.push(`--- Installation Options ---`);
+    calc.steps.push(`⚡ PERFORMANCE: ${metresPerformance.toFixed(1)}m (${coveragePerformance.toFixed(0)}% of heating need)`);
+    calc.steps.push(`🌿 ECO: ${metresEco.toFixed(1)}m on 2 walls (${coverageEco.toFixed(0)}% of heating need)`);
+    
+    // Check if there's enough wall space
+    const hasEnoughWall = availableWallLength >= metresIdeal * 0.7; // At least 70% coverage possible
+    if (!hasEnoughWall) {
+        calc.steps.push(`⚠️ Limited wall space - consider supplementary heating`);
+    }
     
     // Select appropriate panel(s) for backwards compatibility
     const panel = selectPanel(totalWattage);
-    calc.steps.push(`Equivalent panel: ${panel.name} (${panel.wattage}W)`);
     
     return {
         heatLoss: heatLossPerM2,
         recommendedWattage: panel.wattage,
-        metresRequired: metresRequired,
-        perimeterCoverage: parseFloat(perimeterCoverage),
+        // Ideal (unconstrained)
+        metresIdeal: metresIdeal,
+        // Performance mode (all available walls)
+        metresPerformance: metresPerformance,
+        wattsPerformance: wattsPerformance,
+        coveragePerformance: coveragePerformance,
+        // Eco mode (2 opposite walls)
+        metresEco: metresEco,
+        wattsEco: wattsEco,
+        coverageEco: coverageEco,
+        // Wall info
+        estimatedPerimeter: estimatedPerimeter,
+        availableWallLength: availableWallLength,
+        wallAvailability: wallAvailability,
+        hasEnoughWall: hasEnoughWall,
         panel,
         calculation: calc.steps.join('\n')
     };
@@ -1879,20 +1935,42 @@ function calculateQuickEstimate(area) {
     // Use average heat loss of 75 W/m² (typical for medium insulation)
     const avgHeatLoss = 75;
     const wattsNeeded = Math.round(area * avgHeatLoss);
-    const metresNeeded = (wattsNeeded / HEATENE_SPECS.wattsPerMetre).toFixed(1);
+    
+    // Calculate perimeter and available wall (assume 75% for average room)
+    const perimeter = 4 * Math.sqrt(area);
+    const availableWall = perimeter * 0.75;
+    
+    // Performance mode: all available walls
+    const metresPerf = Math.min(wattsNeeded / HEATENE_SPECS.wattsPerMetre, availableWall);
+    
+    // Eco mode: 2 opposite walls (~50% of available)
+    const metresEco = availableWall * 0.5;
     
     // Get pricing for current market (default to UK)
     const market = state.market || 'uk';
     const pricing = HEATENE_PRICING[market];
     const currency = pricing.currency;
-    const productCost = Math.round(metresNeeded * pricing.pricePerMetre);
-    const installCost = Math.round(metresNeeded * pricing.installPerMetre);
-    const totalCost = productCost + installCost + pricing.thermostat;
+    
+    // Performance cost
+    const perfProductCost = Math.round(metresPerf * pricing.pricePerMetre);
+    const perfInstallCost = Math.round(metresPerf * pricing.installPerMetre);
+    const perfTotalCost = perfProductCost + perfInstallCost + pricing.thermostat;
+    
+    // Eco cost
+    const ecoProductCost = Math.round(metresEco * pricing.pricePerMetre);
+    const ecoInstallCost = Math.round(metresEco * pricing.installPerMetre);
+    const ecoTotalCost = ecoProductCost + ecoInstallCost + pricing.thermostat;
     
     // Display results
     document.getElementById('qcWatts').textContent = wattsNeeded + 'W';
-    document.getElementById('qcMetres').textContent = metresNeeded + 'm';
-    document.getElementById('qcCost').textContent = currency + totalCost.toLocaleString();
+    document.getElementById('qcMetres').innerHTML = `
+        <span style="display:block">⚡ ${metresPerf.toFixed(1)}m</span>
+        <span style="display:block; font-size:0.9em; opacity:0.8">🌿 ${metresEco.toFixed(1)}m</span>
+    `;
+    document.getElementById('qcCost').innerHTML = `
+        <span style="display:block">⚡ ${currency}${perfTotalCost.toLocaleString()}</span>
+        <span style="display:block; font-size:0.9em; opacity:0.8">🌿 ${currency}${ecoTotalCost.toLocaleString()}</span>
+    `;
     document.getElementById('quickCalcResults').style.display = 'block';
 }
 
