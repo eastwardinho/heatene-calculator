@@ -240,6 +240,59 @@ body {
     margin-top: 0.5rem;
 }
 
+/* Era Selector */
+.era-selector {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+    .era-selector {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 400px) {
+    .era-selector {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.era-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 0.5rem;
+    background: var(--white);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.era-btn:hover {
+    border-color: var(--primary-light);
+}
+
+.era-btn.selected {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+}
+
+.era-years {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.era-label {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 0.125rem;
+}
+
 /* Number Selector */
 .number-selector {
     display: flex;

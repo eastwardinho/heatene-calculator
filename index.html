@@ -55,12 +55,30 @@
                     </div>
                 </div>
 
-                <!-- Question 2: Year Built -->
+                <!-- Question 2: Era Built -->
                 <div class="question" id="q2">
-                    <label class="question-label" for="yearBuilt">2. What year was your home built?</label>
-                    <div class="input-wrapper">
-                        <input type="number" id="yearBuilt" class="form-input" placeholder="e.g. 1985" min="1800" max="2025">
-                        <span class="input-hint">Older homes typically need more heating</span>
+                    <label class="question-label">2. When was your home built?</label>
+                    <div class="era-selector" id="eraSelector">
+                        <button class="era-btn" data-value="pre1920" onclick="selectEra('pre1920', this)">
+                            <span class="era-years">Pre-1920</span>
+                            <span class="era-label">Historic</span>
+                        </button>
+                        <button class="era-btn" data-value="1920-1950" onclick="selectEra('1920-1950', this)">
+                            <span class="era-years">1920-1950</span>
+                            <span class="era-label">Pre-war</span>
+                        </button>
+                        <button class="era-btn" data-value="1950-1980" onclick="selectEra('1950-1980', this)">
+                            <span class="era-years">1950-1980</span>
+                            <span class="era-label">Post-war</span>
+                        </button>
+                        <button class="era-btn" data-value="1980-2000" onclick="selectEra('1980-2000', this)">
+                            <span class="era-years">1980-2000</span>
+                            <span class="era-label">Modern</span>
+                        </button>
+                        <button class="era-btn" data-value="2000+" onclick="selectEra('2000+', this)">
+                            <span class="era-years">2000+</span>
+                            <span class="era-label">Contemporary</span>
+                        </button>
                     </div>
                 </div>
 
@@ -192,7 +210,7 @@
                     <div class="calc-details" id="calcDetails" style="display: none;">
                         <ul>
                             <li><strong>Base calculation:</strong> 21W per linear foot of HeatENE baseboard</li>
-                            <li><strong>Heat loss factor:</strong> Adjusted for your home type and age</li>
+                            <li><strong>Heat loss factor:</strong> Adjusted for your home type and era</li>
                             <li><strong>Room sizing:</strong> Industry-standard room dimensions by bedroom/bathroom count</li>
                             <li><strong>Pricing:</strong> $17.50/ft for baseboard (thermostats sold separately)</li>
                         </ul>

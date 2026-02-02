@@ -6,7 +6,7 @@
 
 let state = {
     housingType: null,
-    yearBuilt: null,
+    era: null,
     bedrooms: null,
     bathrooms: null,
     sqft: null
@@ -30,15 +30,14 @@ const HOUSING_HEAT_FACTORS = {
     rural: 15       // Larger, older, more exposed
 };
 
-// Year built multiplier (older = more heat loss)
-function getYearMultiplier(year) {
-    if (year < 1950) return 1.35;
-    if (year < 1970) return 1.20;
-    if (year < 1990) return 1.10;
-    if (year < 2000) return 1.00;
-    if (year < 2010) return 0.90;
-    return 0.85; // 2010+, modern insulation standards
-}
+// Era multiplier (older = more heat loss)
+const ERA_MULTIPLIERS = {
+    'pre1920': 1.35,    // Historic - minimal insulation
+    '1920-1950': 1.25,  // Pre-war - basic construction
+    '1950-1980': 1.10,  // Post-war - improving standards
+    '1980-2000': 1.00,  // Modern - decent insulation
+    '2000+': 0.85       // Contemporary - good insulation
+};
 
 // Typical room breakdown based on bedroom/bathroom count
 // Returns array of {name, icon, sqft, pctOfHome}
@@ -118,6 +117,17 @@ function selectHousing(element) {
     state.housingType = element.dataset.value;
 }
 
+function selectEra(era, element) {
+    // Remove selection from all
+    document.querySelectorAll('.era-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    // Select clicked
+    element.classList.add('selected');
+    state.era = era;
+}
+
 function selectNumber(field, value, element) {
     // Update state
     state[field] = value;
@@ -147,7 +157,7 @@ function startOver() {
     // Reset state
     state = {
         housingType: null,
-        yearBuilt: null,
+        era: null,
         bedrooms: null,
         bathrooms: null,
         sqft: null
@@ -155,8 +165,8 @@ function startOver() {
     
     // Reset UI
     document.querySelectorAll('.housing-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.era-btn').forEach(b => b.classList.remove('selected'));
     document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
-    document.getElementById('yearBuilt').value = '';
     document.getElementById('sqft').value = '';
     
     // Show calculator, hide results
@@ -182,15 +192,10 @@ function validate() {
         showError('q1', 'Please select your housing type');
     }
     
-    // Year built
-    const yearInput = document.getElementById('yearBuilt');
-    const year = parseInt(yearInput.value);
-    if (!year || year < 1800 || year > 2025) {
+    // Era
+    if (!state.era) {
         valid = false;
-        yearInput.classList.add('error');
-        showError('q2', 'Please enter a valid year (1800-2025)');
-    } else {
-        state.yearBuilt = year;
+        showError('q2', 'Please select when your home was built');
     }
     
     // Bedrooms
@@ -240,11 +245,11 @@ function calculate() {
     // Get base heat factor for housing type
     const baseHeatFactor = HOUSING_HEAT_FACTORS[state.housingType];
     
-    // Apply year multiplier
-    const yearMultiplier = getYearMultiplier(state.yearBuilt);
+    // Apply era multiplier
+    const eraMultiplier = ERA_MULTIPLIERS[state.era];
     
     // Total watts needed
-    const wattsNeeded = state.sqft * baseHeatFactor * yearMultiplier;
+    const wattsNeeded = state.sqft * baseHeatFactor * eraMultiplier;
     
     // Convert to linear feet of HeatENE baseboard
     const totalFeet = Math.ceil(wattsNeeded / WATTS_PER_FOOT);
@@ -328,10 +333,6 @@ function displayResults(results) {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Set up input listeners
-    document.getElementById('yearBuilt').addEventListener('input', (e) => {
-        e.target.classList.remove('error');
-    });
-    
     document.getElementById('sqft').addEventListener('input', (e) => {
         e.target.classList.remove('error');
     });
