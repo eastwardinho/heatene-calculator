@@ -1844,3 +1844,64 @@ window.addEventListener('resize', () => {
         renderProjectionChart();
     }
 });
+
+// ============ QUICK CALCULATE ============
+
+function openQuickCalc() {
+    document.getElementById('quickCalcModal').classList.add('open');
+    document.getElementById('quickCalcResults').style.display = 'none';
+    document.getElementById('quickCalcArea').value = '';
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+}
+
+function closeQuickCalc() {
+    document.getElementById('quickCalcModal').classList.remove('open');
+}
+
+function quickCalcSize(area) {
+    // Update button selection
+    document.querySelectorAll('.size-btn').forEach(b => {
+        b.classList.toggle('selected', parseInt(b.dataset.area) === area);
+    });
+    document.getElementById('quickCalcArea').value = area;
+    calculateQuickEstimate(area);
+}
+
+function quickCalcCustom() {
+    const area = parseFloat(document.getElementById('quickCalcArea').value);
+    if (area && area > 0) {
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+        calculateQuickEstimate(area);
+    }
+}
+
+function calculateQuickEstimate(area) {
+    // Use average heat loss of 75 W/m² (typical for medium insulation)
+    const avgHeatLoss = 75;
+    const wattsNeeded = Math.round(area * avgHeatLoss);
+    const metresNeeded = (wattsNeeded / HEATENE_SPECS.wattsPerMetre).toFixed(1);
+    
+    // Get pricing for current market (default to UK)
+    const market = state.market || 'uk';
+    const pricing = HEATENE_PRICING[market];
+    const currency = pricing.currency;
+    const productCost = Math.round(metresNeeded * pricing.pricePerMetre);
+    const installCost = Math.round(metresNeeded * pricing.installPerMetre);
+    const totalCost = productCost + installCost + pricing.thermostat;
+    
+    // Display results
+    document.getElementById('qcWatts').textContent = wattsNeeded + 'W';
+    document.getElementById('qcMetres').textContent = metresNeeded + 'm';
+    document.getElementById('qcCost').textContent = currency + totalCost.toLocaleString();
+    document.getElementById('quickCalcResults').style.display = 'block';
+}
+
+function quickCalcToFull() {
+    closeQuickCalc();
+    // They're already on step 2, so just let them continue with full calculator
+    const area = parseFloat(document.getElementById('quickCalcArea').value);
+    if (area) {
+        // Could pre-fill a room here, but for now just close and let them add manually
+        openRoomModal();
+    }
+}

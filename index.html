@@ -370,9 +370,14 @@
                     </div>
 
                     <!-- Add Room Button -->
-                    <button class="btn btn-add-room" onclick="openRoomModal()">
-                        <span class="plus-icon">+</span> Add Room
-                    </button>
+                    <div class="room-buttons">
+                        <button class="btn btn-add-room" onclick="openRoomModal()">
+                            <span class="plus-icon">+</span> Add Room
+                        </button>
+                        <button class="btn btn-quick-calc" onclick="openQuickCalc()">
+                            ⚡ Quick Single Room
+                        </button>
+                    </div>
 
                     <!-- Room Summary -->
                     <div class="room-summary" id="roomSummary" style="display: none;">
@@ -834,6 +839,60 @@
                     <button class="btn btn-secondary" onclick="closeRoomModal()">Cancel</button>
                     <button class="btn btn-primary" onclick="saveRoom()" id="saveRoomBtn">Add Room</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Calculate Modal -->
+    <div class="modal-overlay" id="quickCalcModal">
+        <div class="modal-content quick-calc-modal">
+            <div class="modal-header">
+                <h2>⚡ Quick Room Calculator</h2>
+                <button class="modal-close" onclick="closeQuickCalc()">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="quick-calc-intro">Get an instant estimate for a single room</p>
+                
+                <div class="quick-calc-input">
+                    <label class="form-label">Room Size</label>
+                    <div class="quick-size-options">
+                        <button class="size-btn" data-area="8" onclick="quickCalcSize(8)">Small<br><span>~8m²</span></button>
+                        <button class="size-btn" data-area="14" onclick="quickCalcSize(14)">Medium<br><span>~14m²</span></button>
+                        <button class="size-btn" data-area="22" onclick="quickCalcSize(22)">Large<br><span>~22m²</span></button>
+                        <button class="size-btn" data-area="30" onclick="quickCalcSize(30)">X-Large<br><span>~30m²</span></button>
+                    </div>
+                    
+                    <div class="quick-custom-size">
+                        <label class="form-label">Or enter exact size:</label>
+                        <div class="input-with-unit">
+                            <input type="number" id="quickCalcArea" placeholder="e.g. 16" oninput="quickCalcCustom()">
+                            <span class="unit-label">m²</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quick-calc-results" id="quickCalcResults" style="display: none;">
+                    <h3>Your Estimate</h3>
+                    <div class="quick-result-grid">
+                        <div class="quick-result-item">
+                            <span class="result-value" id="qcWatts">-</span>
+                            <span class="result-label">Watts needed</span>
+                        </div>
+                        <div class="quick-result-item">
+                            <span class="result-value" id="qcMetres">-</span>
+                            <span class="result-label">Metres of skirting</span>
+                        </div>
+                        <div class="quick-result-item highlight">
+                            <span class="result-value" id="qcCost">-</span>
+                            <span class="result-label">Estimated cost</span>
+                        </div>
+                    </div>
+                    <p class="quick-calc-note">*Based on average insulation. For accurate quote, use full calculator.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeQuickCalc()">Close</button>
+                <button class="btn btn-primary" onclick="quickCalcToFull()">Get Full Quote →</button>
             </div>
         </div>
     </div>
