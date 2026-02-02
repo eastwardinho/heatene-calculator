@@ -18,9 +18,9 @@
             </div>
             <div class="header-title">Whole-Home Heating Calculator</div>
             <div class="header-settings" id="headerSettings" style="display: none;">
-                <span class="market-indicator" id="marketIndicator">🇬🇧</span>
+                <span class="market-indicator">🇺🇸</span>
                 <button class="btn btn-text btn-small" onclick="toggleUnits()" id="unitToggleBtn" title="Toggle units">
-                    <span id="unitIndicator">m²</span>
+                    <span id="unitIndicator">ft²</span>
                 </button>
             </div>
         </header>
@@ -56,41 +56,25 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Step 0: Market Selection (shown first) -->
+            <!-- Step 0: Welcome / Path Selection -->
             <section class="wizard-step active" id="step0">
                 <div class="step-header">
                     <h1>Welcome to HeatENE</h1>
                     <p>Let's find the perfect infrared heating solution for your home.</p>
                 </div>
 
-                <div class="market-selector">
-                    <label class="form-label">Select your region</label>
-                    <div class="market-cards">
-                        <div class="market-card" data-market="uk" onclick="selectMarket('uk')">
-                            <span class="market-flag">🇬🇧</span>
-                            <span class="market-name">United Kingdom</span>
-                            <span class="market-details">GBP (£) • Metric</span>
-                        </div>
-                        <div class="market-card" data-market="us" onclick="selectMarket('us')">
-                            <span class="market-flag">🇺🇸</span>
-                            <span class="market-name">United States</span>
-                            <span class="market-details">USD ($) • Imperial</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="unit-preferences" id="unitPreferences" style="display: none;">
+                <div class="unit-preferences" id="unitPreferences">
                     <div class="preference-row">
                         <label class="form-label">Unit Preference</label>
                         <div class="toggle-group" id="unitToggle">
                             <button class="toggle-btn" data-value="metric">Metric (m², °C)</button>
-                            <button class="toggle-btn" data-value="imperial">Imperial (ft², °F)</button>
+                            <button class="toggle-btn active" data-value="imperial">Imperial (ft², °F)</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Path Selection (shown after market selected) -->
-                <div class="path-selector" id="pathSelector" style="display: none;">
+                <!-- Path Selection -->
+                <div class="path-selector" id="pathSelector">
                     <label class="form-label">What would you like to do?</label>
                     <div class="path-cards">
                         <div class="path-card" onclick="openQuickCalcDirect()">
@@ -123,31 +107,7 @@
                             Property Type
                             <span class="tooltip" data-tip="Different property types have different heat loss characteristics. Detached homes lose more heat than attached units.">ⓘ</span>
                         </label>
-                        <!-- UK Property Types -->
-                        <div class="select-cards market-uk" data-field="propertyType">
-                            <div class="select-card" data-value="flat">
-                                <span class="card-icon">🏢</span>
-                                <span class="card-label">Flat</span>
-                            </div>
-                            <div class="select-card" data-value="terrace">
-                                <span class="card-icon">🏘️</span>
-                                <span class="card-label">Terrace</span>
-                            </div>
-                            <div class="select-card" data-value="semi">
-                                <span class="card-icon">🏠</span>
-                                <span class="card-label">Semi-Detached</span>
-                            </div>
-                            <div class="select-card" data-value="detached">
-                                <span class="card-icon">🏡</span>
-                                <span class="card-label">Detached</span>
-                            </div>
-                            <div class="select-card" data-value="bungalow">
-                                <span class="card-icon">🏕️</span>
-                                <span class="card-label">Bungalow</span>
-                            </div>
-                        </div>
-                        <!-- US Property Types -->
-                        <div class="select-cards market-us" data-field="propertyType" style="display: none;">
+                        <div class="select-cards" data-field="propertyType">
                             <div class="select-card" data-value="apartment">
                                 <span class="card-icon">🏢</span>
                                 <span class="card-label">Apartment</span>
@@ -168,6 +128,10 @@
                                 <span class="card-icon">🏠</span>
                                 <span class="card-label">Ranch</span>
                             </div>
+                            <div class="select-card" data-value="mobile-home">
+                                <span class="card-icon">🚐</span>
+                                <span class="card-label">Mobile Home</span>
+                            </div>
                         </div>
                     </div>
 
@@ -179,11 +143,11 @@
                         <div class="select-cards" data-field="propertyAge">
                             <div class="select-card" data-value="pre1920">
                                 <span class="card-label">Pre-1920</span>
-                                <span class="card-sublabel">Victorian/Edwardian</span>
+                                <span class="card-sublabel">Historic</span>
                             </div>
                             <div class="select-card" data-value="1920-1950">
                                 <span class="card-label">1920-1950</span>
-                                <span class="card-sublabel">Inter-war</span>
+                                <span class="card-sublabel">Pre-war</span>
                             </div>
                             <div class="select-card" data-value="1950-1980">
                                 <span class="card-label">1950-1980</span>
@@ -203,7 +167,7 @@
                     <div class="form-group">
                         <label class="form-label">
                             Insulation Rating
-                            <span class="tooltip" data-tip="Consider your loft insulation, wall insulation (cavity or solid), and double/triple glazing. If unsure, check your EPC rating.">ⓘ</span>
+                            <span class="tooltip" data-tip="Consider your attic insulation, wall insulation (cavity or solid), and double/triple-pane windows. If unsure, check your energy audit.">ⓘ</span>
                         </label>
                         <div class="select-cards horizontal" data-field="insulation">
                             <div class="select-card" data-value="poor">
@@ -214,116 +178,90 @@
                             <div class="select-card" data-value="average">
                                 <span class="card-icon">🌤️</span>
                                 <span class="card-label">Average</span>
-                                <span class="card-sublabel">Some loft & double glazing</span>
+                                <span class="card-sublabel">Some attic & double-pane</span>
                             </div>
                             <div class="select-card" data-value="good">
                                 <span class="card-icon">☀️</span>
                                 <span class="card-label">Good</span>
-                                <span class="card-sublabel">Full loft, cavity walls</span>
+                                <span class="card-sublabel">Full attic, wall insulation</span>
                             </div>
                             <div class="select-card" data-value="excellent">
                                 <span class="card-icon">🔥</span>
                                 <span class="card-label">Excellent</span>
-                                <span class="card-sublabel">Fully insulated, triple glazing</span>
+                                <span class="card-sublabel">Fully insulated, triple-pane</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group">
-                            <!-- UK Region Selector -->
-                            <div class="market-uk" id="ukRegionGroup">
-                                <label class="form-label">
-                                    UK Region
-                                    <span class="tooltip" data-tip="Climate varies across the UK. Scotland and Northern regions need more heating capacity than the South.">ⓘ</span>
-                                </label>
-                                <select class="form-select" id="ukRegion">
-                                    <option value="">Select your region...</option>
-                                    <option value="scotland-north">Scotland (North)</option>
-                                    <option value="scotland-central">Scotland (Central)</option>
-                                    <option value="northern-ireland">Northern Ireland</option>
-                                    <option value="north-england">North England</option>
-                                    <option value="north-west">North West</option>
-                                    <option value="yorkshire">Yorkshire & Humber</option>
-                                    <option value="east-midlands">East Midlands</option>
-                                    <option value="west-midlands">West Midlands</option>
-                                    <option value="wales">Wales</option>
-                                    <option value="east-anglia">East Anglia</option>
-                                    <option value="south-west">South West</option>
-                                    <option value="south-east">South East</option>
-                                    <option value="london">London</option>
-                                </select>
-                            </div>
-                            <!-- US State/Climate Zone Selector -->
-                            <div class="market-us" id="usRegionGroup" style="display: none;">
-                                <label class="form-label">
-                                    State / Climate Zone
-                                    <span class="tooltip" data-tip="US climate varies significantly. Northern states need more heating capacity than southern regions.">ⓘ</span>
-                                </label>
-                                <select class="form-select" id="usRegion">
-                                    <option value="">Select your state...</option>
-                                    <optgroup label="Zone 1-2 (Hot)">
-                                        <option value="FL">Florida</option>
-                                        <option value="HI">Hawaii</option>
-                                        <option value="TX-S">Texas (South)</option>
-                                        <option value="AZ-S">Arizona (South)</option>
-                                        <option value="LA">Louisiana</option>
-                                    </optgroup>
-                                    <optgroup label="Zone 3 (Warm)">
-                                        <option value="CA-S">California (South)</option>
-                                        <option value="TX-N">Texas (North)</option>
-                                        <option value="AZ-N">Arizona (North)</option>
-                                        <option value="NM">New Mexico</option>
-                                        <option value="GA">Georgia</option>
-                                        <option value="SC">South Carolina</option>
-                                        <option value="AL">Alabama</option>
-                                        <option value="MS">Mississippi</option>
-                                    </optgroup>
-                                    <optgroup label="Zone 4 (Mixed)">
-                                        <option value="CA-N">California (North)</option>
-                                        <option value="NC">North Carolina</option>
-                                        <option value="TN">Tennessee</option>
-                                        <option value="VA">Virginia</option>
-                                        <option value="KY">Kentucky</option>
-                                        <option value="OK">Oklahoma</option>
-                                        <option value="KS">Kansas</option>
-                                        <option value="MO">Missouri</option>
-                                        <option value="NV">Nevada</option>
-                                        <option value="UT">Utah</option>
-                                    </optgroup>
-                                    <optgroup label="Zone 5 (Cool)">
-                                        <option value="NY">New York</option>
-                                        <option value="PA">Pennsylvania</option>
-                                        <option value="NJ">New Jersey</option>
-                                        <option value="OH">Ohio</option>
-                                        <option value="IN">Indiana</option>
-                                        <option value="IL">Illinois</option>
-                                        <option value="IA">Iowa</option>
-                                        <option value="NE">Nebraska</option>
-                                        <option value="CO">Colorado</option>
-                                        <option value="OR">Oregon</option>
-                                        <option value="WA">Washington</option>
-                                        <option value="ID">Idaho</option>
-                                        <option value="MA">Massachusetts</option>
-                                        <option value="CT">Connecticut</option>
-                                    </optgroup>
-                                    <optgroup label="Zone 6 (Cold)">
-                                        <option value="MI">Michigan</option>
-                                        <option value="WI">Wisconsin</option>
-                                        <option value="MN">Minnesota</option>
-                                        <option value="MT">Montana</option>
-                                        <option value="WY">Wyoming</option>
-                                        <option value="VT">Vermont</option>
-                                        <option value="NH">New Hampshire</option>
-                                        <option value="ME">Maine</option>
-                                    </optgroup>
-                                    <optgroup label="Zone 7-8 (Very Cold)">
-                                        <option value="ND">North Dakota</option>
-                                        <option value="SD">South Dakota</option>
-                                        <option value="AK">Alaska</option>
-                                    </optgroup>
-                                </select>
-                            </div>
+                        <div class="form-group" id="usRegionGroup">
+                            <label class="form-label">
+                                State / Climate Zone
+                                <span class="tooltip" data-tip="US climate varies significantly. Northern states need more heating capacity than southern regions.">ⓘ</span>
+                            </label>
+                            <select class="form-select" id="usRegion">
+                                <option value="">Select your state...</option>
+                                <optgroup label="Zone 1-2 (Hot)">
+                                    <option value="FL">Florida</option>
+                                    <option value="HI">Hawaii</option>
+                                    <option value="TX-S">Texas (South)</option>
+                                    <option value="AZ-S">Arizona (South)</option>
+                                    <option value="LA">Louisiana</option>
+                                </optgroup>
+                                <optgroup label="Zone 3 (Warm)">
+                                    <option value="CA-S">California (South)</option>
+                                    <option value="TX-N">Texas (North)</option>
+                                    <option value="AZ-N">Arizona (North)</option>
+                                    <option value="NM">New Mexico</option>
+                                    <option value="GA">Georgia</option>
+                                    <option value="SC">South Carolina</option>
+                                    <option value="AL">Alabama</option>
+                                    <option value="MS">Mississippi</option>
+                                </optgroup>
+                                <optgroup label="Zone 4 (Mixed)">
+                                    <option value="CA-N">California (North)</option>
+                                    <option value="NC">North Carolina</option>
+                                    <option value="TN">Tennessee</option>
+                                    <option value="VA">Virginia</option>
+                                    <option value="KY">Kentucky</option>
+                                    <option value="OK">Oklahoma</option>
+                                    <option value="KS">Kansas</option>
+                                    <option value="MO">Missouri</option>
+                                    <option value="NV">Nevada</option>
+                                    <option value="UT">Utah</option>
+                                </optgroup>
+                                <optgroup label="Zone 5 (Cool)">
+                                    <option value="NY">New York</option>
+                                    <option value="PA">Pennsylvania</option>
+                                    <option value="NJ">New Jersey</option>
+                                    <option value="OH">Ohio</option>
+                                    <option value="IN">Indiana</option>
+                                    <option value="IL">Illinois</option>
+                                    <option value="IA">Iowa</option>
+                                    <option value="NE">Nebraska</option>
+                                    <option value="CO">Colorado</option>
+                                    <option value="OR">Oregon</option>
+                                    <option value="WA">Washington</option>
+                                    <option value="ID">Idaho</option>
+                                    <option value="MA">Massachusetts</option>
+                                    <option value="CT">Connecticut</option>
+                                </optgroup>
+                                <optgroup label="Zone 6 (Cold)">
+                                    <option value="MI">Michigan</option>
+                                    <option value="WI">Wisconsin</option>
+                                    <option value="MN">Minnesota</option>
+                                    <option value="MT">Montana</option>
+                                    <option value="WY">Wyoming</option>
+                                    <option value="VT">Vermont</option>
+                                    <option value="NH">New Hampshire</option>
+                                    <option value="ME">Maine</option>
+                                </optgroup>
+                                <optgroup label="Zone 7-8 (Very Cold)">
+                                    <option value="ND">North Dakota</option>
+                                    <option value="SD">South Dakota</option>
+                                    <option value="AK">Alaska</option>
+                                </optgroup>
+                            </select>
                         </div>
 
                         <div class="form-group">
@@ -331,20 +269,7 @@
                                 Current Heating
                                 <span class="tooltip" data-tip="Your current heating type helps us calculate potential savings when switching to infrared.">ⓘ</span>
                             </label>
-                            <!-- UK Heating Options -->
-                            <select class="form-select market-uk" id="currentHeating">
-                                <option value="">Select heating type...</option>
-                                <option value="gas-modern">Gas Boiler (Modern, &lt;10 years)</option>
-                                <option value="gas-old">Gas Boiler (Older, &gt;10 years)</option>
-                                <option value="electric-radiators">Electric Radiators</option>
-                                <option value="storage-heaters">Storage Heaters</option>
-                                <option value="oil">Oil Boiler</option>
-                                <option value="lpg">LPG Boiler</option>
-                                <option value="heat-pump">Heat Pump</option>
-                                <option value="none">No Central Heating</option>
-                            </select>
-                            <!-- US Heating Options -->
-                            <select class="form-select market-us" id="currentHeatingUS" style="display: none;">
+                            <select class="form-select" id="currentHeating">
                                 <option value="">Select heating type...</option>
                                 <option value="gas-furnace-modern">Gas Furnace (Modern, &lt;10 years)</option>
                                 <option value="gas-furnace-old">Gas Furnace (Older, &gt;10 years)</option>
@@ -361,7 +286,7 @@
                 </div>
 
                 <div class="step-actions">
-                    <button class="btn btn-secondary" disabled>Back</button>
+                    <button class="btn btn-secondary" onclick="goToStep(0)">← Back</button>
                     <button class="btn btn-primary" onclick="nextStep()">Continue to Rooms →</button>
                 </div>
             </section>
@@ -398,7 +323,7 @@
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">Total Area</span>
-                            <span class="summary-value"><span id="totalArea">0</span> m²</span>
+                            <span class="summary-value"><span id="totalArea">0</span> ft²</span>
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">Est. Heat Required</span>
@@ -437,8 +362,8 @@
                             <span class="tooltip" data-tip="Your total annual spending on heating. If you have gas, this is your gas bill minus any cooking usage (~5%).">ⓘ</span>
                         </label>
                         <div class="input-with-prefix">
-                            <span class="input-prefix currency-symbol">£</span>
-                            <input type="number" class="form-input" id="annualCost" placeholder="e.g. 1200">
+                            <span class="input-prefix currency-symbol">$</span>
+                            <input type="number" class="form-input" id="annualCost" placeholder="e.g. 1500">
                         </div>
                     </div>
 
@@ -448,44 +373,34 @@
                             <span class="tooltip" data-tip="Average monthly heating cost across the year. Winter months will be higher.">ⓘ</span>
                         </label>
                         <div class="input-with-prefix">
-                            <span class="input-prefix currency-symbol">£</span>
-                            <input type="number" class="form-input" id="monthlyCost" placeholder="e.g. 100">
+                            <span class="input-prefix currency-symbol">$</span>
+                            <input type="number" class="form-input" id="monthlyCost" placeholder="e.g. 125">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">
                             Electricity Rate
-                            <span class="tooltip tariff-tooltip" data-tip="Your electricity rate per kWh. The UK average in 2026 is around 22p/kWh.">ⓘ</span>
+                            <span class="tooltip" data-tip="Your electricity rate per kWh. US average is ~$0.16/kWh but varies by state ($0.10-$0.35).">ⓘ</span>
                         </label>
                         <div class="input-with-suffix">
-                            <input type="number" class="form-input" id="electricityTariff" value="22" step="0.01">
-                            <span class="input-suffix tariff-unit">p/kWh</span>
+                            <input type="number" class="form-input" id="electricityTariff" value="0.16" step="0.01">
+                            <span class="input-suffix tariff-unit">$/kWh</span>
                         </div>
                     </div>
 
                     <div class="form-group" id="gasTariffGroup">
                         <label class="form-label">
                             <span class="gas-label">Gas Rate</span>
-                            <span class="tooltip gas-tooltip" data-tip="Your gas rate per kWh. The UK average is around 5.5p/kWh.">ⓘ</span>
+                            <span class="tooltip" data-tip="Your natural gas rate per kWh. US average is ~$0.012/kWh (~$1.20/therm).">ⓘ</span>
                         </label>
                         <div class="input-with-suffix">
-                            <input type="number" class="form-input" id="gasTariff" value="5.5" step="0.01">
-                            <span class="input-suffix tariff-unit">p/kWh</span>
+                            <input type="number" class="form-input" id="gasTariff" value="0.012" step="0.001">
+                            <span class="input-suffix tariff-unit">$/kWh</span>
                         </div>
                     </div>
 
-                    <!-- UK Info Box -->
-                    <div class="info-box market-uk">
-                        <div class="info-icon">💡</div>
-                        <div class="info-content">
-                            <strong>Not sure about your costs?</strong>
-                            <p>Check your energy bills or online account. For gas, your annual statement shows total kWh used. For the UK average, a 3-bed semi spends around £800-1200/year on heating.</p>
-                        </div>
-                    </div>
-                    
-                    <!-- US Info Box -->
-                    <div class="info-box market-us" style="display: none;">
+                    <div class="info-box">
                         <div class="info-icon">💡</div>
                         <div class="info-content">
                             <strong>Not sure about your costs?</strong>
@@ -537,7 +452,7 @@
                         <div class="summary-card highlight">
                             <div class="summary-card-icon">💰</div>
                             <div class="summary-card-content">
-                                <span class="summary-card-value" id="annualSavings">£0</span>
+                                <span class="summary-card-value" id="annualSavings">$0</span>
                                 <span class="summary-card-label">Annual Savings</span>
                             </div>
                         </div>
@@ -588,8 +503,8 @@
                             </div>
                             <div class="comparison-row">
                                 <div class="comparison-cell label">Annual Running Cost</div>
-                                <div class="comparison-cell" id="currentRunningCost">£0</div>
-                                <div class="comparison-cell highlight" id="heateneRunningCost">£0</div>
+                                <div class="comparison-cell" id="currentRunningCost">$0</div>
+                                <div class="comparison-cell highlight" id="heateneRunningCost">$0</div>
                             </div>
                             <div class="comparison-row">
                                 <div class="comparison-cell label">Efficiency</div>
@@ -623,18 +538,18 @@
                                 <div class="investment-breakdown">
                                     <div class="breakdown-row">
                                         <span>HeatENE Panels</span>
-                                        <span id="panelCost">£0</span>
+                                        <span id="panelCost">$0</span>
                                     </div>
                                     <div class="breakdown-row optional">
                                         <span>
                                             <input type="checkbox" id="includeInstall" checked>
                                             <label for="includeInstall">Professional Installation</label>
                                         </span>
-                                        <span id="installCost">£0</span>
+                                        <span id="installCost">$0</span>
                                     </div>
                                     <div class="breakdown-row total">
                                         <span>Total Investment</span>
-                                        <span id="totalInvestment">£0</span>
+                                        <span id="totalInvestment">$0</span>
                                     </div>
                                 </div>
                             </div>
@@ -667,7 +582,7 @@
                         </div>
                         <div class="ten-year-savings">
                             <span class="ten-year-label">10-Year Total Savings:</span>
-                            <span class="ten-year-value" id="tenYearSavings">£0</span>
+                            <span class="ten-year-value" id="tenYearSavings">$0</span>
                         </div>
                     </div>
                 </div>
@@ -724,8 +639,9 @@
                             <option value="office">Home Office</option>
                             <option value="dining">Dining Room</option>
                             <option value="hallway">Hallway</option>
-                            <option value="conservatory">Conservatory</option>
+                            <option value="sunroom">Sunroom</option>
                             <option value="utility">Utility Room</option>
+                            <option value="basement">Basement</option>
                             <option value="other">Other</option>
                         </select>
                     </div>
@@ -747,23 +663,23 @@
                         <div class="select-cards horizontal" data-field="roomSize">
                             <div class="select-card" data-value="small">
                                 <span class="card-label">Small</span>
-                                <span class="card-sublabel size-label-metric">~8 m²</span>
-                                <span class="card-sublabel size-label-imperial" style="display:none;">~86 ft²</span>
+                                <span class="card-sublabel size-label-metric" style="display:none;">~8 m²</span>
+                                <span class="card-sublabel size-label-imperial">~86 ft²</span>
                             </div>
                             <div class="select-card" data-value="medium">
                                 <span class="card-label">Medium</span>
-                                <span class="card-sublabel size-label-metric">~14 m²</span>
-                                <span class="card-sublabel size-label-imperial" style="display:none;">~150 ft²</span>
+                                <span class="card-sublabel size-label-metric" style="display:none;">~14 m²</span>
+                                <span class="card-sublabel size-label-imperial">~150 ft²</span>
                             </div>
                             <div class="select-card" data-value="large">
                                 <span class="card-label">Large</span>
-                                <span class="card-sublabel size-label-metric">~22 m²</span>
-                                <span class="card-sublabel size-label-imperial" style="display:none;">~237 ft²</span>
+                                <span class="card-sublabel size-label-metric" style="display:none;">~22 m²</span>
+                                <span class="card-sublabel size-label-imperial">~237 ft²</span>
                             </div>
                             <div class="select-card" data-value="xlarge">
                                 <span class="card-label">X-Large</span>
-                                <span class="card-sublabel size-label-metric">~30 m²</span>
-                                <span class="card-sublabel size-label-imperial" style="display:none;">~323 ft²</span>
+                                <span class="card-sublabel size-label-metric" style="display:none;">~30 m²</span>
+                                <span class="card-sublabel size-label-imperial">~323 ft²</span>
                             </div>
                         </div>
                     </div>
@@ -771,22 +687,22 @@
                     <div id="customSizeGroup" style="display: none;">
                         <div class="dimensions-input">
                             <div class="form-group">
-                                <label class="form-label dimension-label-length">Length (m)</label>
-                                <input type="number" class="form-input" id="roomLength" placeholder="4.5" step="0.1">
+                                <label class="form-label dimension-label-length">Length (ft)</label>
+                                <input type="number" class="form-input" id="roomLength" placeholder="15" step="0.5">
                             </div>
                             <span class="dimension-x">×</span>
                             <div class="form-group">
-                                <label class="form-label dimension-label-width">Width (m)</label>
-                                <input type="number" class="form-input" id="roomWidth" placeholder="3.5" step="0.1">
+                                <label class="form-label dimension-label-width">Width (ft)</label>
+                                <input type="number" class="form-input" id="roomWidth" placeholder="12" step="0.5">
                             </div>
                             <span class="dimension-x">×</span>
                             <div class="form-group">
-                                <label class="form-label dimension-label-height">Height (m)</label>
-                                <input type="number" class="form-input" id="roomHeight" placeholder="2.4" step="0.1" value="2.4">
+                                <label class="form-label dimension-label-height">Height (ft)</label>
+                                <input type="number" class="form-input" id="roomHeight" placeholder="8" step="0.5" value="8">
                             </div>
                         </div>
                         <div class="calculated-area">
-                            Area: <span id="calculatedArea">0</span> <span class="area-unit">m²</span>
+                            Area: <span id="calculatedArea">0</span> <span class="area-unit">ft²</span>
                         </div>
                     </div>
 
@@ -801,7 +717,7 @@
                                 <option value="small">Small (1-2 small windows)</option>
                                 <option value="medium" selected>Medium (standard)</option>
                                 <option value="large">Large (picture window/patio)</option>
-                                <option value="extensive">Extensive (conservatory-style)</option>
+                                <option value="extensive">Extensive (sunroom-style)</option>
                             </select>
                         </div>
 
@@ -865,53 +781,51 @@
                 <p class="quick-calc-intro">Get an instant estimate for a single room</p>
                 
                 <div class="quick-calc-input">
-                    <label class="form-label">Room Size</label>
+                    <label class="form-label">Room Size (sq ft)</label>
                     <div class="quick-size-options">
-                        <button class="size-btn" data-area="8" onclick="quickCalcSize(8)">Small<br><span>~8m²</span></button>
-                        <button class="size-btn" data-area="14" onclick="quickCalcSize(14)">Medium<br><span>~14m²</span></button>
-                        <button class="size-btn" data-area="22" onclick="quickCalcSize(22)">Large<br><span>~22m²</span></button>
-                        <button class="size-btn" data-area="30" onclick="quickCalcSize(30)">X-Large<br><span>~30m²</span></button>
+                        <button class="size-btn" data-area="100" onclick="quickCalcSize(100)">100<span>Small</span></button>
+                        <button class="size-btn" data-area="150" onclick="quickCalcSize(150)">150<span>Medium</span></button>
+                        <button class="size-btn" data-area="250" onclick="quickCalcSize(250)">250<span>Large</span></button>
+                        <button class="size-btn" data-area="350" onclick="quickCalcSize(350)">350<span>X-Large</span></button>
                     </div>
                     
                     <div class="quick-custom-size">
-                        <label class="form-label">Or enter exact size:</label>
+                        <label class="form-label">Or enter custom size:</label>
                         <div class="input-with-unit">
-                            <input type="number" id="quickCalcArea" placeholder="e.g. 16" oninput="quickCalcCustom()">
-                            <span class="unit-label">m²</span>
+                            <input type="number" class="form-input" id="quickCalcArea" placeholder="Enter sq ft" onchange="quickCalcCustom()">
+                            <span class="unit-label">ft²</span>
                         </div>
                     </div>
                 </div>
                 
+                <div class="mode-explanation">
+                    <div class="mode-item"><strong>⚡ Performance:</strong> Maximum coverage for fastest heat-up</div>
+                    <div class="mode-item"><strong>🌿 Eco:</strong> Two opposite walls for efficient steady heating</div>
+                </div>
+                
                 <div class="quick-calc-results" id="quickCalcResults" style="display: none;">
-                    <h3>Your Estimate</h3>
+                    <h3>Estimated Requirements</h3>
                     <div class="quick-result-grid">
                         <div class="quick-result-item">
                             <span class="result-value" id="qcWatts">-</span>
-                            <span class="result-label">Watts needed</span>
+                            <span class="result-label">Watts Needed</span>
                         </div>
                         <div class="quick-result-item">
-                            <span class="result-value" id="qcMetres">-</span>
-                            <span class="result-label">Metres of skirting</span>
+                            <span class="result-value" id="qcFeet">-</span>
+                            <span class="result-label">Baseboard Length</span>
                         </div>
                         <div class="quick-result-item highlight">
                             <span class="result-value" id="qcCost">-</span>
-                            <span class="result-label">Upfront cost (inc. install)</span>
+                            <span class="result-label">Est. Cost</span>
                         </div>
                     </div>
-                    <div class="mode-explanation">
-                        <div class="mode-item">
-                            <strong>⚡ Performance</strong> — All available walls for fastest heating
-                        </div>
-                        <div class="mode-item">
-                            <strong>🌿 Eco</strong> — 2 longest opposite walls for good convection at lower cost
-                        </div>
-                    </div>
-                    <p class="quick-calc-note">*Based on average insulation. For accurate quote, use full calculator.</p>
+                    <p class="quick-calc-note">*Includes baseboard + install + thermostat. Actual requirements may vary based on insulation and climate.</p>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeQuickCalc()">Close</button>
-                <button class="btn btn-primary" onclick="quickCalcToFull()">Get Full Quote →</button>
+                
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeQuickCalc()">Close</button>
+                    <button class="btn btn-primary" onclick="quickCalcToFull()">Full Calculator →</button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,5 +1,6 @@
 /* ====================================
    HeatENE Calculator - Application Logic
+   USA Edition
    ==================================== */
 
 // ============ STATE MANAGEMENT ============
@@ -7,9 +8,9 @@
 const STATE_KEY = 'heatene_calculator_state';
 
 let state = {
-    currentStep: 0, // Start at market selection
-    market: null, // 'uk' or 'us'
-    units: null, // 'metric' or 'imperial'
+    currentStep: 0, // Start at welcome/path selection
+    market: 'us', // USA only
+    units: 'imperial', // Default to imperial
     property: {
         type: null,
         age: null,
@@ -22,25 +23,16 @@ let state = {
         inputType: 'annual',
         annualCost: null,
         monthlyCost: null,
-        electricityTariff: null, // Will be set based on market
-        gasTariff: null,
+        electricityTariff: 0.16, // $/kWh US default
+        gasTariff: 0.012, // $/kWh US default
         heatingPattern: null
     },
     results: null,
     editingRoomIndex: null
 };
 
-// Market-specific defaults
+// Market defaults (US only)
 const MARKET_DEFAULTS = {
-    uk: {
-        currency: '£',
-        currencyName: 'GBP',
-        electricityTariff: 22, // pence/kWh
-        gasTariff: 5.5, // pence/kWh
-        tariffUnit: 'p/kWh',
-        units: 'metric',
-        flag: '🇬🇧'
-    },
     us: {
         currency: '$',
         currencyName: 'USD',
@@ -67,6 +59,8 @@ function loadState() {
         if (saved) {
             const parsed = JSON.parse(saved);
             state = { ...state, ...parsed };
+            // Always ensure US market
+            state.market = 'us';
             restoreUIFromState();
         }
     } catch (e) {
@@ -86,27 +80,28 @@ function saveState() {
 // ============ CONSTANTS & DATA ============
 
 // Room type configurations with wall availability
-// wallAvailability = percentage of perimeter that can have skirting (accounts for doors, fixtures, etc.)
+// wallAvailability = percentage of perimeter that can have baseboard (accounts for doors, fixtures, etc.)
 const ROOM_PRESETS = {
-    living: { icon: '🛋️', name: 'Living Room', tempTarget: 21, defaultSize: 'large', wallAvailability: 0.75 },
-    bedroom: { icon: '🛏️', name: 'Bedroom', tempTarget: 18, defaultSize: 'medium', wallAvailability: 0.85 },
-    'master-bedroom': { icon: '🛏️', name: 'Master Bedroom', tempTarget: 18, defaultSize: 'large', wallAvailability: 0.80 },
-    kitchen: { icon: '🍳', name: 'Kitchen', tempTarget: 18, defaultSize: 'medium', wallAvailability: 0.50 },
-    bathroom: { icon: '🚿', name: 'Bathroom', tempTarget: 22, defaultSize: 'small', wallAvailability: 0.60 },
-    office: { icon: '💻', name: 'Home Office', tempTarget: 20, defaultSize: 'small', wallAvailability: 0.80 },
-    dining: { icon: '🍽️', name: 'Dining Room', tempTarget: 20, defaultSize: 'medium', wallAvailability: 0.80 },
-    hallway: { icon: '🚪', name: 'Hallway', tempTarget: 16, defaultSize: 'small', wallAvailability: 0.60 },
-    conservatory: { icon: '🌿', name: 'Conservatory', tempTarget: 18, defaultSize: 'large', wallAvailability: 0.30 },
-    utility: { icon: '🧺', name: 'Utility Room', tempTarget: 15, defaultSize: 'small', wallAvailability: 0.60 },
-    other: { icon: '📦', name: 'Other', tempTarget: 19, defaultSize: 'medium', wallAvailability: 0.70 }
+    living: { icon: '🛋️', name: 'Living Room', tempTarget: 70, defaultSize: 'large', wallAvailability: 0.75 },
+    bedroom: { icon: '🛏️', name: 'Bedroom', tempTarget: 65, defaultSize: 'medium', wallAvailability: 0.85 },
+    'master-bedroom': { icon: '🛏️', name: 'Master Bedroom', tempTarget: 65, defaultSize: 'large', wallAvailability: 0.80 },
+    kitchen: { icon: '🍳', name: 'Kitchen', tempTarget: 65, defaultSize: 'medium', wallAvailability: 0.50 },
+    bathroom: { icon: '🚿', name: 'Bathroom', tempTarget: 72, defaultSize: 'small', wallAvailability: 0.60 },
+    office: { icon: '💻', name: 'Home Office', tempTarget: 68, defaultSize: 'small', wallAvailability: 0.80 },
+    dining: { icon: '🍽️', name: 'Dining Room', tempTarget: 68, defaultSize: 'medium', wallAvailability: 0.80 },
+    hallway: { icon: '🚪', name: 'Hallway', tempTarget: 62, defaultSize: 'small', wallAvailability: 0.60 },
+    sunroom: { icon: '🌿', name: 'Sunroom', tempTarget: 65, defaultSize: 'large', wallAvailability: 0.30 },
+    utility: { icon: '🧺', name: 'Utility Room', tempTarget: 60, defaultSize: 'small', wallAvailability: 0.60 },
+    basement: { icon: '🏚️', name: 'Basement', tempTarget: 62, defaultSize: 'xlarge', wallAvailability: 0.70 },
+    other: { icon: '📦', name: 'Other', tempTarget: 66, defaultSize: 'medium', wallAvailability: 0.70 }
 };
 
-// Size presets in m²
+// Size presets in m² (converted to ft² for display)
 const SIZE_PRESETS = {
-    small: { area: 8, height: 2.4 },
-    medium: { area: 14, height: 2.4 },
-    large: { area: 22, height: 2.5 },
-    xlarge: { area: 30, height: 2.7 }
+    small: { area: 8, height: 2.4 },      // ~86 ft²
+    medium: { area: 14, height: 2.4 },    // ~150 ft²
+    large: { area: 22, height: 2.5 },     // ~237 ft²
+    xlarge: { area: 30, height: 2.7 }     // ~323 ft²
 };
 
 // Heat loss factors
@@ -114,7 +109,7 @@ const SIZE_PRESETS = {
 // Better insulation = less cycling needed
 const DUTY_CYCLE = {
     poor: 0.70,      // 70% - old/uninsulated homes, heating runs most of the time
-    average: 0.55,   // 55% - typical UK home
+    average: 0.55,   // 55% - typical home
     good: 0.40,      // 40% - well insulated, less cycling needed
     excellent: 0.30  // 30% - passive house territory, minimal heating needed
 };
@@ -139,18 +134,12 @@ const HEAT_LOSS = {
     
     // Property type multiplier (heat loss through external surfaces)
     typeMultiplier: {
-        // UK types
-        flat: 0.85,
-        terrace: 0.9,
-        semi: 1.0,
-        detached: 1.15,
-        bungalow: 1.2,  // More roof surface area
-        // US types
         apartment: 0.85,
         condo: 0.88,
         townhouse: 0.9,
         'single-family': 1.15,
-        ranch: 1.2  // Single story = more roof surface
+        ranch: 1.2,  // Single story = more roof surface
+        'mobile-home': 1.3
     },
     
     // External wall adjustment (W/m² per wall)
@@ -172,48 +161,30 @@ const HEAT_LOSS = {
         unheated: 1.15
     },
     
-    // Ceiling height adjustment (per 10cm above 2.4m)
+    // Ceiling height adjustment (per 10cm above 2.4m / 8ft)
     heightAdjustPer10cm: 0.03,
     
-    // UK climate zone multiplier
+    // US climate zone multiplier by state
     climateMultiplier: {
-        uk: {
-            'scotland-north': 1.2,
-            'scotland-central': 1.15,
-            'northern-ireland': 1.1,
-            'north-england': 1.1,
-            'north-west': 1.08,
-            'yorkshire': 1.05,
-            'east-midlands': 1.0,
-            'west-midlands': 1.0,
-            'wales': 1.05,
-            'east-anglia': 0.98,
-            'south-west': 0.95,
-            'south-east': 0.95,
-            'london': 0.92
-        },
-        // US states by IECC climate zone
-        us: {
-            // Zone 1-2 (Hot-Humid/Hot-Dry)
-            'FL': 0.7, 'HI': 0.6, 'TX-S': 0.75, 'AZ-S': 0.75, 'LA': 0.75,
-            // Zone 3 (Warm)
-            'CA-S': 0.8, 'TX-N': 0.85, 'AZ-N': 0.85, 'NM': 0.85, 
-            'GA': 0.85, 'SC': 0.85, 'AL': 0.85, 'MS': 0.85,
-            // Zone 4 (Mixed)
-            'CA-N': 0.9, 'NC': 0.92, 'TN': 0.95, 'VA': 0.95, 
-            'KY': 0.95, 'OK': 0.92, 'KS': 0.95, 'MO': 0.98,
-            'NV': 0.9, 'UT': 0.95,
-            // Zone 5 (Cool)
-            'NY': 1.05, 'PA': 1.02, 'NJ': 1.0, 'OH': 1.05, 
-            'IN': 1.05, 'IL': 1.08, 'IA': 1.1, 'NE': 1.1,
-            'CO': 1.05, 'OR': 0.98, 'WA': 1.0, 'ID': 1.05,
-            'MA': 1.05, 'CT': 1.02,
-            // Zone 6 (Cold)
-            'MI': 1.15, 'WI': 1.18, 'MN': 1.22, 'MT': 1.2,
-            'WY': 1.18, 'VT': 1.15, 'NH': 1.15, 'ME': 1.18,
-            // Zone 7-8 (Very Cold/Subarctic)
-            'ND': 1.25, 'SD': 1.22, 'AK': 1.35
-        }
+        // Zone 1-2 (Hot-Humid/Hot-Dry)
+        'FL': 0.7, 'HI': 0.6, 'TX-S': 0.75, 'AZ-S': 0.75, 'LA': 0.75,
+        // Zone 3 (Warm)
+        'CA-S': 0.8, 'TX-N': 0.85, 'AZ-N': 0.85, 'NM': 0.85, 
+        'GA': 0.85, 'SC': 0.85, 'AL': 0.85, 'MS': 0.85,
+        // Zone 4 (Mixed)
+        'CA-N': 0.9, 'NC': 0.92, 'TN': 0.95, 'VA': 0.95, 
+        'KY': 0.95, 'OK': 0.92, 'KS': 0.95, 'MO': 0.98,
+        'NV': 0.9, 'UT': 0.95,
+        // Zone 5 (Cool)
+        'NY': 1.05, 'PA': 1.02, 'NJ': 1.0, 'OH': 1.05, 
+        'IN': 1.05, 'IL': 1.08, 'IA': 1.1, 'NE': 1.1,
+        'CO': 1.05, 'OR': 0.98, 'WA': 1.0, 'ID': 1.05,
+        'MA': 1.05, 'CT': 1.02,
+        // Zone 6 (Cold)
+        'MI': 1.15, 'WI': 1.18, 'MN': 1.22, 'MT': 1.2,
+        'WY': 1.18, 'VT': 1.15, 'NH': 1.15, 'ME': 1.18,
+        // Zone 7-8 (Very Cold/Subarctic)
+        'ND': 1.25, 'SD': 1.22, 'AK': 1.35
     },
     
     // Room type temperature target affects sizing
@@ -226,8 +197,9 @@ const HEAT_LOSS = {
         office: 1.0,
         dining: 1.0,
         hallway: 0.7,
-        conservatory: 1.3,
+        sunroom: 1.3,
         utility: 0.75,
+        basement: 1.1,
         other: 1.0
     },
     
@@ -239,110 +211,40 @@ const HEAT_LOSS = {
     }
 };
 
-// HeatENE Skirting Specifications
-// Product: Graphene heating film at 580W/m², outputs 70W per linear metre of skirting
+// HeatENE Baseboard Specifications
+// Product: Graphene heating film at 580W/m², outputs 70W per linear foot of baseboard
 const HEATENE_SPECS = {
-    wattsPerMetre: 70,           // W per linear metre of skirting
+    wattsPerFoot: 21.3,          // W per linear foot of baseboard (~70W/m)
+    wattsPerMetre: 70,           // W per linear meter of baseboard
     filmRating: 580,             // W/m² of the graphene film
-    maxSurfaceTemp: 55,          // °C (child safe)
+    maxSurfaceTemp: 131,         // °F (child safe, ~55°C)
     efficiency: 0.9969,          // 99.69% thermal conversion
-    profileHeight: 0.139,        // metres (139mm)
-    profileDepth: 0.018,         // metres (18mm)
-    maxLength: 6,                // metres per piece
+    profileHeight: 5.5,          // inches (139mm)
+    profileDepth: 0.7,           // inches (18mm)
+    maxLength: 20,               // feet per piece (~6m)
     warranty: 10                 // years
 };
 
-// Pricing per metre (by market)
+// Pricing per foot (US)
 const HEATENE_PRICING = {
-    uk: {
-        pricePerMetre: 45,       // £ per linear metre
-        installPerMetre: 15,     // £ installation per metre
-        thermostat: 85,          // £ per room thermostat
-        currency: '£'
-    },
-    us: {
-        pricePerMetre: 57,       // $ per linear metre (~£45 × 1.27)
-        installPerMetre: 19,     // $ installation per metre
-        thermostat: 108,         // $ per room thermostat
-        currency: '$'
-    }
+    pricePerFoot: 17.50,      // $ per linear foot (~$57/m)
+    installPerFoot: 5.80,     // $ installation per foot (~$19/m)
+    thermostat: 108,          // $ per room thermostat
+    currency: '$'
 };
 
-// Legacy panel mappings (for backwards compatibility)
-// These convert to equivalent metres of skirting
-const PANELS = {
-    uk: [
-        { wattage: 400, price: 280, name: 'HeatENE 400', metres: 5.7 },
-        { wattage: 600, price: 350, name: 'HeatENE 600', metres: 8.6 },
-        { wattage: 800, price: 420, name: 'HeatENE 800', metres: 11.4 },
-        { wattage: 1000, price: 500, name: 'HeatENE 1000', metres: 14.3 }
-    ],
-    us: [
-        { wattage: 400, price: 355, name: 'HeatENE 400', metres: 5.7 },
-        { wattage: 600, price: 445, name: 'HeatENE 600', metres: 8.6 },
-        { wattage: 800, price: 535, name: 'HeatENE 800', metres: 11.4 },
-        { wattage: 1000, price: 635, name: 'HeatENE 1000', metres: 14.3 }
-    ]
-};
+// Panel configurations for backwards compatibility
+const PANELS = [
+    { wattage: 400, price: 355, name: 'HeatENE 400', feet: 19 },
+    { wattage: 600, price: 445, name: 'HeatENE 600', feet: 28 },
+    { wattage: 800, price: 535, name: 'HeatENE 800', feet: 37 },
+    { wattage: 1000, price: 635, name: 'HeatENE 1000', feet: 47 }
+];
 
-const INSTALL_COST_PER_PANEL = {
-    uk: 50,
-    us: 65 // ~£50 × 1.27 + slight markup for US labor
-};
+const INSTALL_COST_PER_PANEL = 65;
 
 // Heating system efficiency and characteristics
 const HEATING_SYSTEMS = {
-    // UK Systems
-    'gas-modern': {
-        name: 'Modern Gas Boiler',
-        efficiency: 0.92,
-        fuelType: 'gas',
-        maintenance: 'Annual service',
-        lifespan: '10-15 years',
-        zoneControl: 'Limited'
-    },
-    'gas-old': {
-        name: 'Older Gas Boiler',
-        efficiency: 0.72,
-        fuelType: 'gas',
-        maintenance: 'Annual service',
-        lifespan: '5-10 years',
-        zoneControl: 'Limited'
-    },
-    'electric-radiators': {
-        name: 'Electric Radiators',
-        efficiency: 1.0,
-        fuelType: 'electricity',
-        maintenance: 'Minimal',
-        lifespan: '15-20 years',
-        zoneControl: 'Per-room'
-    },
-    'storage-heaters': {
-        name: 'Storage Heaters',
-        efficiency: 0.9,
-        fuelType: 'electricity',
-        maintenance: 'Minimal',
-        lifespan: '15-20 years',
-        zoneControl: 'Limited'
-    },
-    'oil': {
-        name: 'Oil Boiler',
-        efficiency: 0.85,
-        fuelType: 'oil',
-        maintenance: 'Annual service',
-        lifespan: '15-20 years',
-        zoneControl: 'Limited'
-    },
-    'lpg': {
-        name: 'LPG Boiler',
-        efficiency: 0.88,
-        fuelType: 'lpg',
-        maintenance: 'Annual service',
-        lifespan: '10-15 years',
-        zoneControl: 'Limited'
-    },
-    
-    // US Systems
     'gas-furnace-modern': {
         name: 'Modern Gas Furnace',
         efficiency: 0.95,
@@ -375,6 +277,14 @@ const HEATING_SYSTEMS = {
         lifespan: '20+ years',
         zoneControl: 'Per-room'
     },
+    'heat-pump': {
+        name: 'Heat Pump',
+        efficiency: 3.0,  // COP
+        fuelType: 'electricity',
+        maintenance: 'Annual check',
+        lifespan: '20-25 years',
+        zoneControl: 'Zoned'
+    },
     'oil-furnace': {
         name: 'Oil Furnace',
         efficiency: 0.83,
@@ -399,16 +309,6 @@ const HEATING_SYSTEMS = {
         lifespan: '15-20 years',
         zoneControl: 'Zoned'
     },
-    
-    // Shared
-    'heat-pump': {
-        name: 'Heat Pump',
-        efficiency: 3.0,  // COP
-        fuelType: 'electricity',
-        maintenance: 'Annual check',
-        lifespan: '20-25 years',
-        zoneControl: 'Zoned'
-    },
     'none': {
         name: 'No Central Heating',
         efficiency: 0.8,
@@ -421,21 +321,12 @@ const HEATING_SYSTEMS = {
 
 // CO2 emissions kg per kWh by fuel type
 const CO2_FACTORS = {
-    uk: {
-        gas: 0.182,
-        electricity: 0.193,  // UK grid average
-        oil: 0.245,
-        lpg: 0.214,
-        mixed: 0.2
-    },
-    us: {
-        gas: 0.181,
-        electricity: 0.386,  // US grid average (higher due to more coal/gas)
-        oil: 0.250,
-        propane: 0.215,
-        wood: 0.039,  // Considered carbon-neutral-ish
-        mixed: 0.25
-    }
+    gas: 0.181,
+    electricity: 0.386,  // US grid average (higher due to more coal/gas)
+    oil: 0.250,
+    propane: 0.215,
+    wood: 0.039,  // Considered carbon-neutral-ish
+    mixed: 0.25
 };
 
 // ============ UI INITIALIZATION ============
@@ -447,68 +338,29 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeDimensionInputs();
     initializeInstallCheckbox();
     
-    // If market already selected, apply it
-    if (state.market) {
-        applyMarketSettings(state.market, false);
-        document.getElementById('headerSettings').style.display = 'flex';
-    }
+    // Apply US market settings
+    applyMarketSettings();
+    document.getElementById('headerSettings').style.display = 'flex';
     
     updateProgress();
     goToStep(state.currentStep);
 });
 
-// ============ MARKET SELECTION ============
+// ============ MARKET SETTINGS ============
 
-function selectMarket(market) {
-    state.market = market;
+function applyMarketSettings() {
+    const defaults = MARKET_DEFAULTS.us;
     
-    // Update UI
-    document.querySelectorAll('.market-card').forEach(card => {
-        card.classList.toggle('selected', card.dataset.market === market);
-    });
-    
-    // Set default units based on market
-    state.units = MARKET_DEFAULTS[market].units;
-    
-    // Show unit preferences
-    document.getElementById('unitPreferences').style.display = 'block';
-    
-    // Set the correct toggle button active
-    document.querySelectorAll('#unitToggle .toggle-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.value === state.units);
-    });
-    
-    // Show path selector
-    document.getElementById('pathSelector').style.display = 'block';
-    
-    saveState();
-}
-
-function startCalculator() {
-    if (!state.market) return;
-    
-    // Apply market settings
-    applyMarketSettings(state.market, true);
-    
-    // Show header settings
-    document.getElementById('headerSettings').style.display = 'flex';
-    
-    // Move to step 1
-    goToStep(1);
-}
-
-function applyMarketSettings(market, setDefaults = false) {
-    const defaults = MARKET_DEFAULTS[market];
-    
-    // Set default tariffs if not already set or if forcing defaults
-    if (setDefaults || state.costs.electricityTariff === null) {
+    // Set default tariffs if not already set
+    if (state.costs.electricityTariff === null) {
         state.costs.electricityTariff = defaults.electricityTariff;
-        document.getElementById('electricityTariff').value = defaults.electricityTariff;
     }
-    if (setDefaults || state.costs.gasTariff === null) {
+    document.getElementById('electricityTariff').value = state.costs.electricityTariff;
+    
+    if (state.costs.gasTariff === null) {
         state.costs.gasTariff = defaults.gasTariff;
-        document.getElementById('gasTariff').value = defaults.gasTariff;
     }
+    document.getElementById('gasTariff').value = state.costs.gasTariff;
     
     // Update currency symbols
     document.querySelectorAll('.currency-symbol').forEach(el => {
@@ -520,35 +372,8 @@ function applyMarketSettings(market, setDefaults = false) {
         el.textContent = defaults.tariffUnit;
     });
     
-    // Update tooltips
-    if (market === 'us') {
-        document.querySelector('.tariff-tooltip')?.setAttribute('data-tip', 
-            'Your electricity rate per kWh. US average is ~$0.16/kWh but varies by state ($0.10-$0.35).');
-        document.querySelector('.gas-tooltip')?.setAttribute('data-tip', 
-            'Your natural gas rate per kWh. US average is ~$0.012/kWh (~$1.20/therm).');
-    } else {
-        document.querySelector('.tariff-tooltip')?.setAttribute('data-tip', 
-            'Your electricity rate per kWh. The UK average in 2026 is around 22p/kWh.');
-        document.querySelector('.gas-tooltip')?.setAttribute('data-tip', 
-            'Your gas rate per kWh. The UK average is around 5.5p/kWh.');
-    }
-    
-    // Show/hide market-specific elements
-    document.querySelectorAll('.market-uk').forEach(el => {
-        el.style.display = market === 'uk' ? '' : 'none';
-    });
-    document.querySelectorAll('.market-us').forEach(el => {
-        el.style.display = market === 'us' ? '' : 'none';
-    });
-    
-    // Update header indicator
-    document.getElementById('marketIndicator').textContent = defaults.flag;
-    
     // Apply unit settings
     applyUnitSettings(state.units);
-    
-    // Re-initialize select cards for the visible market
-    initializeSelectCards();
     
     saveState();
 }
@@ -579,12 +404,13 @@ function applyUnitSettings(units) {
     const widthLabel = isMetric ? 'Width (m)' : 'Width (ft)';
     const heightLabel = isMetric ? 'Height (m)' : 'Height (ft)';
     
-    document.querySelector('.dimension-label-length')?.textContent && 
-        (document.querySelector('.dimension-label-length').textContent = lengthLabel);
-    document.querySelector('.dimension-label-width')?.textContent && 
-        (document.querySelector('.dimension-label-width').textContent = widthLabel);
-    document.querySelector('.dimension-label-height')?.textContent && 
-        (document.querySelector('.dimension-label-height').textContent = heightLabel);
+    const lengthEl = document.querySelector('.dimension-label-length');
+    const widthEl = document.querySelector('.dimension-label-width');
+    const heightEl = document.querySelector('.dimension-label-height');
+    
+    if (lengthEl) lengthEl.textContent = lengthLabel;
+    if (widthEl) widthEl.textContent = widthLabel;
+    if (heightEl) heightEl.textContent = heightLabel;
     
     // Update area unit
     document.querySelectorAll('.area-unit').forEach(el => {
@@ -664,17 +490,22 @@ function initializeDimensionInputs() {
         }
     });
     
-    // Also bind change events for main form inputs
-    ['ukRegion', 'usRegion', 'currentHeating', 'currentHeatingUS'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('change', () => {
-                if (id === 'ukRegion' || id === 'usRegion') state.property.region = el.value;
-                if (id === 'currentHeating' || id === 'currentHeatingUS') state.property.currentHeating = el.value;
-                saveState();
-            });
-        }
-    });
+    // Bind change events for form inputs
+    const regionEl = document.getElementById('usRegion');
+    if (regionEl) {
+        regionEl.addEventListener('change', () => {
+            state.property.region = regionEl.value;
+            saveState();
+        });
+    }
+    
+    const heatingEl = document.getElementById('currentHeating');
+    if (heatingEl) {
+        heatingEl.addEventListener('change', () => {
+            state.property.currentHeating = heatingEl.value;
+            saveState();
+        });
+    }
     
     // Costs inputs
     ['annualCost', 'monthlyCost', 'electricityTariff', 'gasTariff'].forEach(id => {
@@ -727,7 +558,7 @@ function updateStateField(field, value) {
 function goToStep(step) {
     state.currentStep = step;
     
-    // Update wizard steps visibility (step0 is market selection)
+    // Update wizard steps visibility
     document.querySelectorAll('.wizard-step').forEach((el) => {
         const elStep = parseInt(el.id.replace('step', ''));
         el.classList.toggle('active', elStep === step);
@@ -788,7 +619,7 @@ function validateCurrentStep() {
                 return false;
             }
             if (!state.property.region) {
-                alert(state.market === 'uk' ? 'Please select your UK region' : 'Please select your state');
+                alert('Please select your state');
                 return false;
             }
             if (!state.property.currentHeating) {
@@ -823,6 +654,11 @@ function validateCurrentStep() {
     }
 }
 
+// Called from step 0 to start the full calculator
+function startCalculator() {
+    goToStep(1);
+}
+
 // ============ ROOM MANAGEMENT ============
 
 function openRoomModal(index = null) {
@@ -834,7 +670,7 @@ function openRoomModal(index = null) {
     document.querySelectorAll('#roomModal [data-field="roomSize"] .select-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('roomLength').value = '';
     document.getElementById('roomWidth').value = '';
-    document.getElementById('roomHeight').value = '2.4';
+    document.getElementById('roomHeight').value = state.units === 'imperial' ? '8' : '2.4';
     document.getElementById('windowArea').value = 'medium';
     document.getElementById('externalWalls').value = '1';
     document.getElementById('floorType').value = 'ground';
@@ -907,86 +743,86 @@ function saveRoom() {
             return;
         }
     
-    const customName = document.getElementById('roomName').value.trim();
-    const sizeType = document.querySelector('#sizeInputType .toggle-btn.active').dataset.value;
-    
-    let area, height, length, width, size;
-    
-    if (sizeType === 'preset') {
-        const selectedSize = document.querySelector('#roomModal [data-field="roomSize"] .select-card.selected');
-        if (!selectedSize) {
-            alert('Please select a room size');
-            return;
-        }
-        size = selectedSize.dataset.value;
-        const sizeData = SIZE_PRESETS[size];
-        area = sizeData.area;
-        height = sizeData.height;
-        length = Math.sqrt(area);
-        width = Math.sqrt(area);
-    } else {
-        length = parseFloat(document.getElementById('roomLength').value);
-        width = parseFloat(document.getElementById('roomWidth').value);
-        height = parseFloat(document.getElementById('roomHeight').value);
+        const customName = document.getElementById('roomName').value.trim();
+        const sizeType = document.querySelector('#sizeInputType .toggle-btn.active').dataset.value;
         
-        if (!length || !width || !height) {
-            alert('Please enter room dimensions');
-            return;
+        let area, height, length, width, size;
+        
+        if (sizeType === 'preset') {
+            const selectedSize = document.querySelector('#roomModal [data-field="roomSize"] .select-card.selected');
+            if (!selectedSize) {
+                alert('Please select a room size');
+                return;
+            }
+            size = selectedSize.dataset.value;
+            const sizeData = SIZE_PRESETS[size];
+            area = sizeData.area;
+            height = sizeData.height;
+            length = Math.sqrt(area);
+            width = Math.sqrt(area);
+        } else {
+            length = parseFloat(document.getElementById('roomLength').value);
+            width = parseFloat(document.getElementById('roomWidth').value);
+            height = parseFloat(document.getElementById('roomHeight').value);
+            
+            if (!length || !width || !height) {
+                alert('Please enter room dimensions');
+                return;
+            }
+            
+            // Convert from imperial to metric if needed (store internally as metric)
+            if (state.units === 'imperial') {
+                length = length * CONVERSIONS.ftToM;
+                width = width * CONVERSIONS.ftToM;
+                height = height * CONVERSIONS.ftToM;
+            }
+            
+            area = length * width;
         }
         
-        // Convert from imperial to metric if needed (store internally as metric)
-        if (state.units === 'imperial') {
-            length = length * CONVERSIONS.ftToM;
-            width = width * CONVERSIONS.ftToM;
-            height = height * CONVERSIONS.ftToM;
+        const room = {
+            type,
+            customName,
+            sizeType,
+            size,
+            area,
+            length,
+            width,
+            height,
+            windowArea: document.getElementById('windowArea').value,
+            externalWalls: parseInt(document.getElementById('externalWalls').value),
+            floorType: document.getElementById('floorType').value,
+            usagePattern: document.getElementById('usagePattern').value
+        };
+        
+        // Calculate heat requirements
+        const calc = calculateRoomHeat(room);
+        room.heatLoss = calc.heatLoss;
+        room.recommendedWattage = calc.recommendedWattage;
+        room.panel = calc.panel;
+        room.calculation = calc.calculation;
+        // Wall availability and installation options
+        room.estimatedPerimeter = calc.estimatedPerimeter;
+        room.availableWallLength = calc.availableWallLength;
+        room.wallAvailability = calc.wallAvailability;
+        room.hasEnoughWall = calc.hasEnoughWall;
+        room.feetIdeal = calc.feetIdeal;
+        room.feetPerformance = calc.feetPerformance;
+        room.wattsPerformance = calc.wattsPerformance;
+        room.coveragePerformance = calc.coveragePerformance;
+        room.feetEco = calc.feetEco;
+        room.wattsEco = calc.wattsEco;
+        room.coverageEco = calc.coverageEco;
+        
+        if (state.editingRoomIndex !== null) {
+            state.rooms[state.editingRoomIndex] = room;
+        } else {
+            state.rooms.push(room);
         }
         
-        area = length * width;
-    }
-    
-    const room = {
-        type,
-        customName,
-        sizeType,
-        size,
-        area,
-        length,
-        width,
-        height,
-        windowArea: document.getElementById('windowArea').value,
-        externalWalls: parseInt(document.getElementById('externalWalls').value),
-        floorType: document.getElementById('floorType').value,
-        usagePattern: document.getElementById('usagePattern').value
-    };
-    
-    // Calculate heat requirements
-    const calc = calculateRoomHeat(room);
-    room.heatLoss = calc.heatLoss;
-    room.recommendedWattage = calc.recommendedWattage;
-    room.panel = calc.panel;
-    room.calculation = calc.calculation;
-    // Wall availability and installation options
-    room.estimatedPerimeter = calc.estimatedPerimeter;
-    room.availableWallLength = calc.availableWallLength;
-    room.wallAvailability = calc.wallAvailability;
-    room.hasEnoughWall = calc.hasEnoughWall;
-    room.metresIdeal = calc.metresIdeal;
-    room.metresPerformance = calc.metresPerformance;
-    room.wattsPerformance = calc.wattsPerformance;
-    room.coveragePerformance = calc.coveragePerformance;
-    room.metresEco = calc.metresEco;
-    room.wattsEco = calc.wattsEco;
-    room.coverageEco = calc.coverageEco;
-    
-    if (state.editingRoomIndex !== null) {
-        state.rooms[state.editingRoomIndex] = room;
-    } else {
-        state.rooms.push(room);
-    }
-    
-    saveState();
-    renderRoomList();
-    closeRoomModal();
+        saveState();
+        renderRoomList();
+        closeRoomModal();
     } catch (error) {
         console.error('Error saving room:', error);
         alert('Error saving room: ' + error.message);
@@ -1025,25 +861,26 @@ function renderRoomList() {
         const preset = ROOM_PRESETS[room.type];
         const name = room.customName || preset.name;
         const areaDisplay = formatArea(room.area);
-        const metresPerf = room.metresPerformance ? Math.ceil(room.metresPerformance) : '-';
-        const metresEco = room.metresEco ? Math.ceil(room.metresEco) : '-';
+        const feetPerf = room.feetPerformance ? Math.ceil(room.feetPerformance) : '-';
+        const feetEco = room.feetEco ? Math.ceil(room.feetEco) : '-';
         const wallWarning = room.hasEnoughWall === false ? '<span class="wall-warning" title="Limited wall space">⚠️</span>' : '';
+        const availableFeet = room.availableWallLength ? Math.ceil(room.availableWallLength * CONVERSIONS.mToFt) : 0;
         
         return `
             <div class="room-card">
                 <div class="room-icon">${preset.icon}</div>
                 <div class="room-info">
                     <div class="room-title">${name} ${wallWarning}</div>
-                    <div class="room-details">${areaDisplay} • ${room.availableWallLength ? Math.ceil(room.availableWallLength) + 'm available' : room.externalWalls + ' external walls'}</div>
+                    <div class="room-details">${areaDisplay} • ${availableFeet}ft available</div>
                 </div>
                 <div class="room-options">
                     <div class="room-option performance">
                         <span class="option-label">⚡ Performance</span>
-                        <span class="option-value">${metresPerf}m</span>
+                        <span class="option-value">${feetPerf}ft</span>
                     </div>
                     <div class="room-option eco">
                         <span class="option-label">🌿 Eco</span>
-                        <span class="option-value">${metresEco}m</span>
+                        <span class="option-value">${feetEco}ft</span>
                     </div>
                 </div>
                 <div class="room-actions">
@@ -1059,7 +896,7 @@ function renderRoomList() {
     const totalWattage = state.rooms.reduce((sum, r) => sum + r.recommendedWattage, 0);
     
     document.getElementById('totalRooms').textContent = state.rooms.length;
-    document.getElementById('totalArea').textContent = totalArea.toFixed(0);
+    document.getElementById('totalArea').textContent = Math.round(totalArea * CONVERSIONS.sqmToSqft);
     document.getElementById('estWattage').textContent = totalWattage.toLocaleString();
     
     summary.style.display = 'grid';
@@ -1100,14 +937,12 @@ function calculateRoomHeat(room) {
     const heightAbove24 = Math.max(0, (room.height - 2.4) * 10); // in 10cm units
     const heightMultiplier = 1 + (heightAbove24 * HEAT_LOSS.heightAdjustPer10cm);
     if (heightMultiplier > 1) {
-        calc.steps.push(`Ceiling height (${room.height}m): ×${heightMultiplier.toFixed(2)}`);
+        calc.steps.push(`Ceiling height (${(room.height * CONVERSIONS.mToFt).toFixed(1)}ft): ×${heightMultiplier.toFixed(2)}`);
     }
     
     // Climate multiplier
-    const climateData = HEAT_LOSS.climateMultiplier[state.market] || HEAT_LOSS.climateMultiplier.uk;
-    const climateMultiplier = climateData[state.property.region] || 1;
-    const regionLabel = state.market === 'uk' ? 'UK region' : 'US state';
-    calc.steps.push(`${regionLabel} (${state.property.region}): ×${climateMultiplier}`);
+    const climateMultiplier = HEAT_LOSS.climateMultiplier[state.property.region] || 1;
+    calc.steps.push(`State (${state.property.region}): ×${climateMultiplier}`);
     
     // Room type multiplier
     const roomTypeMultiplier = HEAT_LOSS.roomTypeMultiplier[room.type];
@@ -1126,39 +961,42 @@ function calculateRoomHeat(room) {
     
     // Total wattage needed for full heating
     const totalWattage = heatLossPerM2 * room.area;
-    calc.steps.push(`Room area: ${room.area.toFixed(1)} m²`);
+    const areaFt = room.area * CONVERSIONS.sqmToSqft;
+    calc.steps.push(`Room area: ${areaFt.toFixed(0)} ft² (${room.area.toFixed(1)} m²)`);
     calc.steps.push(`Total heat requirement: ${totalWattage.toFixed(0)} W`);
     
     // Calculate room perimeter and available wall length
     const estimatedPerimeter = 4 * Math.sqrt(room.area);
+    const perimeterFt = estimatedPerimeter * CONVERSIONS.mToFt;
     const roomPreset = ROOM_PRESETS[room.type] || ROOM_PRESETS.other;
     const wallAvailability = roomPreset.wallAvailability;
     const availableWallLength = estimatedPerimeter * wallAvailability;
+    const availableFt = availableWallLength * CONVERSIONS.mToFt;
     
     calc.steps.push(`--- Wall Availability ---`);
-    calc.steps.push(`Estimated perimeter: ${Math.ceil(estimatedPerimeter)}m`);
+    calc.steps.push(`Estimated perimeter: ${Math.ceil(perimeterFt)}ft`);
     calc.steps.push(`${roomPreset.name} usable walls: ${(wallAvailability * 100).toFixed(0)}%`);
-    calc.steps.push(`Available wall length: ${Math.ceil(availableWallLength)}m`);
+    calc.steps.push(`Available wall length: ${Math.ceil(availableFt)}ft`);
     
-    // Calculate metres of HeatENE skirting needed (ideal)
-    const metresIdeal = totalWattage / HEATENE_SPECS.wattsPerMetre;
+    // Calculate feet of HeatENE baseboard needed (ideal)
+    const feetIdeal = totalWattage / HEATENE_SPECS.wattsPerFoot;
     
     // PERFORMANCE MODE: Use all available walls
-    const metresPerformance = Math.min(metresIdeal, availableWallLength);
-    const wattsPerformance = metresPerformance * HEATENE_SPECS.wattsPerMetre;
+    const feetPerformance = Math.min(feetIdeal, availableFt);
+    const wattsPerformance = feetPerformance * HEATENE_SPECS.wattsPerFoot;
     const coveragePerformance = (wattsPerformance / totalWattage * 100);
     
     // ECO MODE: Use ~60% of available walls (2 longest opposite walls)
-    const metresEco = availableWallLength * 0.6;
-    const wattsEco = metresEco * HEATENE_SPECS.wattsPerMetre;
+    const feetEco = availableFt * 0.6;
+    const wattsEco = feetEco * HEATENE_SPECS.wattsPerFoot;
     const coverageEco = (wattsEco / totalWattage * 100);
     
     calc.steps.push(`--- Installation Options ---`);
-    calc.steps.push(`⚡ PERFORMANCE: ${Math.ceil(metresPerformance)}m (${coveragePerformance.toFixed(0)}% of heating need)`);
-    calc.steps.push(`🌿 ECO: ${Math.ceil(metresEco)}m on 2 opposite walls (${coverageEco.toFixed(0)}% of heating need)`);
+    calc.steps.push(`⚡ PERFORMANCE: ${Math.ceil(feetPerformance)}ft (${coveragePerformance.toFixed(0)}% of heating need)`);
+    calc.steps.push(`🌿 ECO: ${Math.ceil(feetEco)}ft on 2 opposite walls (${coverageEco.toFixed(0)}% of heating need)`);
     
     // Check if there's enough wall space
-    const hasEnoughWall = availableWallLength >= metresIdeal * 0.7; // At least 70% coverage possible
+    const hasEnoughWall = availableFt >= feetIdeal * 0.7; // At least 70% coverage possible
     if (!hasEnoughWall) {
         calc.steps.push(`⚠️ Limited wall space - consider supplementary heating`);
     }
@@ -1170,13 +1008,13 @@ function calculateRoomHeat(room) {
         heatLoss: heatLossPerM2,
         recommendedWattage: panel.wattage,
         // Ideal (unconstrained)
-        metresIdeal: metresIdeal,
+        feetIdeal: feetIdeal,
         // Performance mode (all available walls)
-        metresPerformance: metresPerformance,
+        feetPerformance: feetPerformance,
         wattsPerformance: wattsPerformance,
         coveragePerformance: coveragePerformance,
         // Eco mode (2 opposite walls)
-        metresEco: metresEco,
+        feetEco: feetEco,
         wattsEco: wattsEco,
         coverageEco: coverageEco,
         // Wall info
@@ -1190,15 +1028,14 @@ function calculateRoomHeat(room) {
 }
 
 function selectPanel(wattage) {
-    const panels = PANELS[state.market] || PANELS.uk;
     // Find smallest panel that meets or exceeds requirement
-    for (const panel of panels) {
+    for (const panel of PANELS) {
         if (panel.wattage >= wattage * 0.85) { // Allow 15% under for efficiency
             return panel;
         }
     }
     // If requirement exceeds max single panel, return the largest
-    return panels[panels.length - 1];
+    return PANELS[PANELS.length - 1];
 }
 
 // ============ RESULTS CALCULATION ============
@@ -1232,8 +1069,7 @@ function calculateResults() {
         };
     });
     
-    const installCostPerPanel = INSTALL_COST_PER_PANEL[state.market] || INSTALL_COST_PER_PANEL.uk;
-    const installCost = totalPanels * installCostPerPanel;
+    const installCost = totalPanels * INSTALL_COST_PER_PANEL;
     
     // Calculate running costs
     // Assume average daily usage hours based on pattern
@@ -1244,35 +1080,27 @@ function calculateResults() {
     }[state.costs.heatingPattern] || 6;
     
     // Heating season days - varies by climate
-    const climateData = HEAT_LOSS.climateMultiplier[state.market] || HEAT_LOSS.climateMultiplier.uk;
-    const climateFactor = climateData[state.property.region] || 1;
+    const climateFactor = HEAT_LOSS.climateMultiplier[state.property.region] || 1;
     // Base heating days adjusted by climate (colder = more days)
-    const baseHeatingDays = state.market === 'uk' ? 210 : 180;
+    const baseHeatingDays = 180;
     const heatingDays = Math.round(baseHeatingDays * climateFactor);
     
     // Thermostat duty cycle - based on insulation quality
-    // Better insulated homes need less cycling to maintain temperature
     const insulation = state.property.insulation || 'average';
     const infraredCycleRate = DUTY_CYCLE[insulation] || 0.55;
     
     // Annual kWh for HeatENE
     const heateneAnnualKwh = (totalWattage / 1000) * usageHours * heatingDays * infraredCycleRate;
     
-    // Calculate annual cost - UK uses pence, US uses dollars directly
-    let heateneAnnualCost;
-    if (state.market === 'uk') {
-        heateneAnnualCost = heateneAnnualKwh * (state.costs.electricityTariff / 100); // Convert pence to pounds
-    } else {
-        heateneAnnualCost = heateneAnnualKwh * state.costs.electricityTariff; // Already in dollars
-    }
+    // Calculate annual cost - US uses dollars directly
+    const heateneAnnualCost = heateneAnnualKwh * state.costs.electricityTariff;
     
     // Calculate savings
     const annualSavings = currentAnnualCost - heateneAnnualCost;
     
     // CO2 calculation
     const currentCO2 = calculateCurrentCO2(currentAnnualCost, currentSystem);
-    const co2Factors = CO2_FACTORS[state.market] || CO2_FACTORS.uk;
-    const heateneCO2 = heateneAnnualKwh * co2Factors.electricity;
+    const heateneCO2 = heateneAnnualKwh * CO2_FACTORS.electricity;
     const co2Reduction = Math.max(0, currentCO2 - heateneCO2);
     
     // Payback period
@@ -1321,59 +1149,36 @@ function calculateResults() {
 }
 
 function calculateCurrentCO2(annualCost, system) {
-    const co2Factors = CO2_FACTORS[state.market] || CO2_FACTORS.uk;
-    
     // Estimate kWh from cost and fuel type
     let kwhCost;
-    if (state.market === 'uk') {
-        switch (system.fuelType) {
-            case 'gas':
-                kwhCost = state.costs.gasTariff / 100; // pence to pounds
-                break;
-            case 'electricity':
-                kwhCost = state.costs.electricityTariff / 100;
-                break;
-            case 'oil':
-                kwhCost = 0.065;
-                break;
-            case 'lpg':
-                kwhCost = 0.075;
-                break;
-            default:
-                kwhCost = state.costs.gasTariff / 100;
-        }
-    } else {
-        // US - costs already in dollars per kWh
-        switch (system.fuelType) {
-            case 'gas':
-                kwhCost = state.costs.gasTariff;
-                break;
-            case 'electricity':
-                kwhCost = state.costs.electricityTariff;
-                break;
-            case 'oil':
-                kwhCost = 0.04; // ~$4/gallon heating oil
-                break;
-            case 'propane':
-                kwhCost = 0.035;
-                break;
-            case 'wood':
-                kwhCost = 0.02;
-                break;
-            default:
-                kwhCost = state.costs.gasTariff;
-        }
+    switch (system.fuelType) {
+        case 'gas':
+            kwhCost = state.costs.gasTariff;
+            break;
+        case 'electricity':
+            kwhCost = state.costs.electricityTariff;
+            break;
+        case 'oil':
+            kwhCost = 0.04; // ~$4/gallon heating oil
+            break;
+        case 'propane':
+            kwhCost = 0.035;
+            break;
+        case 'wood':
+            kwhCost = 0.02;
+            break;
+        default:
+            kwhCost = state.costs.gasTariff;
     }
     
     const estimatedKwh = annualCost / kwhCost;
-    return estimatedKwh * (co2Factors[system.fuelType] || 0.2);
+    return estimatedKwh * (CO2_FACTORS[system.fuelType] || 0.25);
 }
 
 // ============ HELPER FUNCTIONS ============
 
 function formatCurrency(amount) {
-    const symbol = MARKET_DEFAULTS[state.market]?.currency || '£';
-    return `${symbol}${Math.round(amount).toLocaleString()}`;
+    return `$${Math.round(amount).toLocaleString()}`;
 }
 
 function formatArea(sqMeters) {
@@ -1408,21 +1213,11 @@ function renderResults() {
     
     const r = state.results;
     
-    const currency = MARKET_DEFAULTS[state.market]?.currency || '£';
-    
     // Summary cards
     document.getElementById('annualSavings').textContent = formatCurrency(r.annualSavings);
     document.getElementById('totalWattage').textContent = `${(r.totalWattage / 1000).toFixed(1)}kW`;
     document.getElementById('panelCount').textContent = r.totalPanels;
     document.getElementById('co2Reduction').textContent = `${Math.round(r.co2Reduction)}kg`;
-    
-    // Calculate hourly cost label
-    let hourlyCostUnit;
-    if (state.market === 'uk') {
-        hourlyCostUnit = 'p';
-    } else {
-        hourlyCostUnit = '¢';
-    }
     
     // Room results
     const roomResultsHtml = r.roomResults.map(room => {
@@ -1431,12 +1226,7 @@ function renderResults() {
         
         // Calculate hourly running cost (adjusted for thermostat duty cycle)
         const dutyCycle = DUTY_CYCLE[state.property.insulation] || 0.55;
-        let hourlyCost;
-        if (state.market === 'uk') {
-            hourlyCost = ((room.recommendedWattage / 1000) * state.costs.electricityTariff * dutyCycle).toFixed(1);
-        } else {
-            hourlyCost = ((room.recommendedWattage / 1000) * state.costs.electricityTariff * 100 * dutyCycle).toFixed(1);
-        }
+        const hourlyCost = ((room.recommendedWattage / 1000) * state.costs.electricityTariff * 100 * dutyCycle).toFixed(1);
         
         return `
             <div class="room-result-card">
@@ -1444,7 +1234,7 @@ function renderResults() {
                     <div class="room-result-name">${preset.icon} ${name}</div>
                     <div class="room-result-recommendation">
                         <div class="panel-recommendation">${room.panel.name}</div>
-                        <div class="panel-price">${currency}${room.panel.price}</div>
+                        <div class="panel-price">$${room.panel.price}</div>
                     </div>
                 </div>
                 <div class="room-result-details">
@@ -1461,7 +1251,7 @@ function renderResults() {
                         <span class="detail-label">Recommended</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-value">${hourlyCost}${hourlyCostUnit}</span>
+                        <span class="detail-value">${hourlyCost}¢</span>
                         <span class="detail-label">Cost/Hour</span>
                     </div>
                 </div>
@@ -1567,11 +1357,10 @@ function renderProjectionChart() {
         
         // Y-axis labels
         const value = maxValue - (maxValue * i / 5);
-        const currency = MARKET_DEFAULTS[state.market]?.currency || '£';
         ctx.fillStyle = '#64748b';
-        ctx.font = '12px Inter, sans-serif';
+        ctx.font = '12px Poppins, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`${currency}${Math.round(value / 1000)}k`, padding.left - 10, y + 4);
+        ctx.fillText(`$${Math.round(value / 1000)}k`, padding.left - 10, y + 4);
     }
     
     // X-axis labels
@@ -1603,7 +1392,7 @@ function renderProjectionChart() {
     }
     
     drawLine('current', '#94a3b8');
-    drawLine('heatene', '#e63946');
+    drawLine('heatene', '#f15a29');
     
     // Draw break-even point
     const breakEvenYear = state.results.paybackYears;
@@ -1619,7 +1408,7 @@ function renderProjectionChart() {
         ctx.setLineDash([]);
         
         ctx.fillStyle = '#2a9d8f';
-        ctx.font = '11px Inter, sans-serif';
+        ctx.font = '11px Poppins, sans-serif';
         ctx.fillText('Break-even', x, padding.top - 5);
     }
 }
@@ -1630,39 +1419,29 @@ function renderReport() {
     if (!state.results) return;
     
     const r = state.results;
-    const currency = MARKET_DEFAULTS[state.market]?.currency || '£';
-    const dateLocale = state.market === 'us' ? 'en-US' : 'en-GB';
-    const date = new Date().toLocaleDateString(dateLocale, { 
+    const date = new Date().toLocaleDateString('en-US', { 
         day: 'numeric', 
         month: 'long', 
         year: 'numeric' 
     });
     
     const propertyTypes = {
-        // UK
-        flat: 'Flat/Apartment',
-        terrace: 'Terraced House',
-        semi: 'Semi-Detached House',
-        detached: 'Detached House',
-        bungalow: 'Bungalow',
-        // US
         apartment: 'Apartment',
         condo: 'Condominium',
         townhouse: 'Townhouse',
         'single-family': 'Single-Family Home',
-        ranch: 'Ranch House'
+        ranch: 'Ranch House',
+        'mobile-home': 'Mobile Home'
     };
     const propertyType = propertyTypes[state.property.type] || state.property.type;
     
     const includeInstall = document.getElementById('includeInstall')?.checked ?? true;
     const totalCost = r.totalPanelCost + (includeInstall ? r.installCost : 0);
     
-    const regionLabel = state.market === 'uk' ? 'UK Region' : 'State';
-    
     const html = `
         <div class="report-header">
             <div class="report-logo">
-                <span style="color: #e63946;">Heat</span><span>ENE</span>
+                <span style="color: #f15a29;">Heat</span><span>ENE</span>
             </div>
             <div class="report-title">Whole-Home Heating Assessment</div>
             <div class="report-date">Generated: ${date}</div>
@@ -1684,7 +1463,7 @@ function renderReport() {
                     <span class="report-item-value">${state.property.insulation.charAt(0).toUpperCase() + state.property.insulation.slice(1)}</span>
                 </div>
                 <div class="report-item">
-                    <span class="report-item-label">${regionLabel}</span>
+                    <span class="report-item-label">State</span>
                     <span class="report-item-value">${state.property.region}</span>
                 </div>
                 <div class="report-item">
@@ -1720,7 +1499,7 @@ function renderReport() {
                                 <td>${getAreaInDisplayUnits(room.area)} ${getAreaUnit()}</td>
                                 <td>${room.heatLoss.toFixed(0)} W/m²</td>
                                 <td>${room.panel.name}</td>
-                                <td>${currency}${room.panel.price}</td>
+                                <td>$${room.panel.price}</td>
                             </tr>
                         `;
                     }).join('')}
@@ -1729,7 +1508,7 @@ function renderReport() {
                     <tr>
                         <td colspan="3"><strong>Total</strong></td>
                         <td><strong>${r.totalWattage.toLocaleString()}W</strong></td>
-                        <td><strong>${currency}${r.totalPanelCost.toLocaleString()}</strong></td>
+                        <td><strong>$${r.totalPanelCost.toLocaleString()}</strong></td>
                     </tr>
                 </tfoot>
             </table>
@@ -1740,15 +1519,15 @@ function renderReport() {
             <div class="report-grid">
                 <div class="report-item">
                     <span class="report-item-label">Panel Equipment</span>
-                    <span class="report-item-value">${currency}${r.totalPanelCost.toLocaleString()}</span>
+                    <span class="report-item-value">$${r.totalPanelCost.toLocaleString()}</span>
                 </div>
                 <div class="report-item">
                     <span class="report-item-label">Installation${!includeInstall ? ' (excluded)' : ''}</span>
-                    <span class="report-item-value">${includeInstall ? currency + r.installCost.toLocaleString() : 'DIY'}</span>
+                    <span class="report-item-value">${includeInstall ? '$' + r.installCost.toLocaleString() : 'DIY'}</span>
                 </div>
                 <div class="report-item">
                     <span class="report-item-label"><strong>Total Investment</strong></span>
-                    <span class="report-item-value"><strong>${currency}${totalCost.toLocaleString()}</strong></span>
+                    <span class="report-item-value"><strong>$${totalCost.toLocaleString()}</strong></span>
                 </div>
                 <div class="report-item">
                     <span class="report-item-label">Payback Period</span>
@@ -1762,15 +1541,15 @@ function renderReport() {
             <div class="report-grid">
                 <div class="report-item">
                     <span class="report-item-label">Current System</span>
-                    <span class="report-item-value">${currency}${Math.round(r.currentAnnualCost).toLocaleString()}/year</span>
+                    <span class="report-item-value">$${Math.round(r.currentAnnualCost).toLocaleString()}/year</span>
                 </div>
                 <div class="report-item">
                     <span class="report-item-label">HeatENE System</span>
-                    <span class="report-item-value">${currency}${Math.round(r.heateneAnnualCost).toLocaleString()}/year</span>
+                    <span class="report-item-value">$${Math.round(r.heateneAnnualCost).toLocaleString()}/year</span>
                 </div>
             </div>
             <div class="report-highlight" style="margin-top: var(--space-4);">
-                <div class="report-highlight-value">${currency}${Math.round(r.annualSavings).toLocaleString()}</div>
+                <div class="report-highlight-value">$${Math.round(r.annualSavings).toLocaleString()}</div>
                 <div class="report-highlight-label">Projected Annual Savings</div>
             </div>
         </div>
@@ -1800,11 +1579,11 @@ function renderReport() {
         <div class="report-section">
             <h3>10-Year Financial Projection</h3>
             <div class="report-highlight">
-                <div class="report-highlight-value">${currency}${Math.round(r.tenYearSavings).toLocaleString()}</div>
+                <div class="report-highlight-value">$${Math.round(r.tenYearSavings).toLocaleString()}</div>
                 <div class="report-highlight-label">Total 10-Year Savings vs Current System</div>
             </div>
             <p style="text-align: center; color: var(--gray-600); margin-top: var(--space-4); font-size: var(--font-size-sm);">
-                Based on current electricity tariff of ${state.market === 'uk' ? state.costs.electricityTariff + 'p' : '$' + state.costs.electricityTariff}/kWh. 
+                Based on current electricity tariff of $${state.costs.electricityTariff}/kWh. 
                 Actual savings may vary based on usage patterns and energy price changes.
             </p>
         </div>
@@ -1838,15 +1617,6 @@ function resetCalculator() {
 }
 
 function restoreUIFromState() {
-    // Restore market selection
-    if (state.market) {
-        document.querySelectorAll('.market-card').forEach(card => {
-            card.classList.toggle('selected', card.dataset.market === state.market);
-        });
-        document.getElementById('unitPreferences').style.display = 'block';
-        document.getElementById('pathSelector').style.display = 'block';
-    }
-    
     // Restore unit toggle
     if (state.units) {
         document.querySelectorAll('#unitToggle .toggle-btn').forEach(btn => {
@@ -1854,30 +1624,25 @@ function restoreUIFromState() {
         });
     }
     
-    // Restore property selections - check both UK and US versions
+    // Restore property selections
     Object.entries(state.property).forEach(([key, value]) => {
         if (value) {
-            // Try both market-specific and generic selectors
             const fieldName = key === 'type' ? 'propertyType' : key === 'age' ? 'propertyAge' : key;
             const cards = document.querySelectorAll(`[data-field="${fieldName}"] [data-value="${value}"]`);
             cards.forEach(card => card.classList.add('selected'));
         }
     });
     
-    // Restore region selects (both UK and US)
+    // Restore region select
     if (state.property.region) {
-        const ukSelect = document.getElementById('ukRegion');
-        const usSelect = document.getElementById('usRegion');
-        if (ukSelect) ukSelect.value = state.property.region;
-        if (usSelect) usSelect.value = state.property.region;
+        const regionSelect = document.getElementById('usRegion');
+        if (regionSelect) regionSelect.value = state.property.region;
     }
     
-    // Restore heating selects (both UK and US)
+    // Restore heating select
     if (state.property.currentHeating) {
-        const ukSelect = document.getElementById('currentHeating');
-        const usSelect = document.getElementById('currentHeatingUS');
-        if (ukSelect) ukSelect.value = state.property.currentHeating;
-        if (usSelect) usSelect.value = state.property.currentHeating;
+        const heatingSelect = document.getElementById('currentHeating');
+        if (heatingSelect) heatingSelect.value = state.property.currentHeating;
     }
     
     // Restore costs
@@ -1927,14 +1692,8 @@ function openQuickCalc() {
     document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
 }
 
-// Direct Quick Calc from Step 0 (without going through property details)
+// Direct Quick Calc from Step 0
 function openQuickCalcDirect() {
-    if (!state.market) return;
-    
-    // Apply market settings for pricing
-    applyMarketSettings(state.market, true);
-    
-    // Open the modal
     openQuickCalc();
 }
 
@@ -1960,44 +1719,43 @@ function quickCalcCustom() {
 }
 
 function calculateQuickEstimate(area) {
+    // Area is in ft² for US, convert to m² for calculations
+    const areaM2 = area * CONVERSIONS.sqftToSqm;
+    
     // Use average heat loss of 75 W/m² (typical for medium insulation)
     const avgHeatLoss = 75;
-    const wattsNeeded = Math.round(area * avgHeatLoss);
+    const wattsNeeded = Math.round(areaM2 * avgHeatLoss);
     
     // Calculate perimeter and available wall (assume 75% for average room)
-    const perimeter = 4 * Math.sqrt(area);
-    const availableWall = perimeter * 0.75;
+    const perimeterM = 4 * Math.sqrt(areaM2);
+    const perimeterFt = perimeterM * CONVERSIONS.mToFt;
+    const availableFt = perimeterFt * 0.75;
     
-    // Performance mode: all available walls (rounded up to nearest metre)
-    const metresPerf = Math.ceil(Math.min(wattsNeeded / HEATENE_SPECS.wattsPerMetre, availableWall));
+    // Performance mode: all available walls (rounded up to nearest foot)
+    const feetPerf = Math.ceil(Math.min(wattsNeeded / HEATENE_SPECS.wattsPerFoot, availableFt));
     
     // Eco mode: 2 longest opposite walls (~60% of available, rounded up)
-    const metresEco = Math.ceil(availableWall * 0.6);
-    
-    // Get pricing for current market (default to UK)
-    const market = state.market || 'uk';
-    const pricing = HEATENE_PRICING[market];
-    const currency = pricing.currency;
+    const feetEco = Math.ceil(availableFt * 0.6);
     
     // Performance cost
-    const perfProductCost = Math.round(metresPerf * pricing.pricePerMetre);
-    const perfInstallCost = Math.round(metresPerf * pricing.installPerMetre);
-    const perfTotalCost = perfProductCost + perfInstallCost + pricing.thermostat;
+    const perfProductCost = Math.round(feetPerf * HEATENE_PRICING.pricePerFoot);
+    const perfInstallCost = Math.round(feetPerf * HEATENE_PRICING.installPerFoot);
+    const perfTotalCost = perfProductCost + perfInstallCost + HEATENE_PRICING.thermostat;
     
     // Eco cost
-    const ecoProductCost = Math.round(metresEco * pricing.pricePerMetre);
-    const ecoInstallCost = Math.round(metresEco * pricing.installPerMetre);
-    const ecoTotalCost = ecoProductCost + ecoInstallCost + pricing.thermostat;
+    const ecoProductCost = Math.round(feetEco * HEATENE_PRICING.pricePerFoot);
+    const ecoInstallCost = Math.round(feetEco * HEATENE_PRICING.installPerFoot);
+    const ecoTotalCost = ecoProductCost + ecoInstallCost + HEATENE_PRICING.thermostat;
     
     // Display results
     document.getElementById('qcWatts').textContent = wattsNeeded + 'W';
-    document.getElementById('qcMetres').innerHTML = `
-        <span style="display:block">⚡ ${metresPerf}m</span>
-        <span style="display:block; font-size:0.9em; opacity:0.8">🌿 ${metresEco}m</span>
+    document.getElementById('qcFeet').innerHTML = `
+        <span style="display:block">⚡ ${feetPerf}ft</span>
+        <span style="display:block; font-size:0.9em; opacity:0.8">🌿 ${feetEco}ft</span>
     `;
     document.getElementById('qcCost').innerHTML = `
-        <span style="display:block">⚡ ${currency}${perfTotalCost.toLocaleString()}</span>
-        <span style="display:block; font-size:0.9em; opacity:0.8">🌿 ${currency}${ecoTotalCost.toLocaleString()}</span>
+        <span style="display:block">⚡ $${perfTotalCost.toLocaleString()}</span>
+        <span style="display:block; font-size:0.9em; opacity:0.8">🌿 $${ecoTotalCost.toLocaleString()}</span>
     `;
     document.getElementById('quickCalcResults').style.display = 'block';
 }
@@ -2011,7 +1769,7 @@ function quickCalcToFull() {
         startCalculator();
     }
     
-    // Open room modal (optionally could pre-fill area)
+    // Open room modal
     if (area) {
         openRoomModal();
     }
