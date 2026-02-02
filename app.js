@@ -110,6 +110,15 @@ const SIZE_PRESETS = {
 };
 
 // Heat loss factors
+// Thermostat duty cycle - how often heating runs to maintain temperature
+// Better insulation = less cycling needed
+const DUTY_CYCLE = {
+    poor: 0.70,      // 70% - old/uninsulated homes, heating runs most of the time
+    average: 0.55,   // 55% - typical UK home
+    good: 0.40,      // 40% - well insulated, less cycling needed
+    excellent: 0.30  // 30% - passive house territory, minimal heating needed
+};
+
 const HEAT_LOSS = {
     // Base heat loss W/m² by insulation quality
     baseByInsulation: {
@@ -1241,8 +1250,10 @@ function calculateResults() {
     const baseHeatingDays = state.market === 'uk' ? 210 : 180;
     const heatingDays = Math.round(baseHeatingDays * climateFactor);
     
-    // Infrared efficiency factor - they don't run 100% of time (thermostat cycling)
-    const infraredCycleRate = 0.6; // Typically on 60% of "heating time"
+    // Thermostat duty cycle - based on insulation quality
+    // Better insulated homes need less cycling to maintain temperature
+    const insulation = state.property.insulation || 'average';
+    const infraredCycleRate = DUTY_CYCLE[insulation] || 0.55;
     
     // Annual kWh for HeatENE
     const heateneAnnualKwh = (totalWattage / 1000) * usageHours * heatingDays * infraredCycleRate;
@@ -1418,12 +1429,13 @@ function renderResults() {
         const preset = ROOM_PRESETS[room.type];
         const name = room.customName || preset.name;
         
-        // Calculate hourly running cost
+        // Calculate hourly running cost (adjusted for thermostat duty cycle)
+        const dutyCycle = DUTY_CYCLE[state.property.insulation] || 0.55;
         let hourlyCost;
         if (state.market === 'uk') {
-            hourlyCost = ((room.recommendedWattage / 1000) * state.costs.electricityTariff * 0.6).toFixed(1);
+            hourlyCost = ((room.recommendedWattage / 1000) * state.costs.electricityTariff * dutyCycle).toFixed(1);
         } else {
-            hourlyCost = ((room.recommendedWattage / 1000) * state.costs.electricityTariff * 100 * 0.6).toFixed(1);
+            hourlyCost = ((room.recommendedWattage / 1000) * state.costs.electricityTariff * 100 * dutyCycle).toFixed(1);
         }
         
         return `
