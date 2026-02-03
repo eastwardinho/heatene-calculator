@@ -375,6 +375,12 @@ function calculate() {
     // Simplified: perimeter in feet ≈ 4.4 * sqrt(sqft)
     const estimatedPerimeterFt = 4.4 * Math.sqrt(state.sqft);
     
+    // Determine recommendation based on home characteristics
+    // Recommend Performance for: older homes, rural properties, or poor insulation (implied by era)
+    const needsMoreHeat = ['pre1920', '1920-1950', '1950-1980'].includes(state.era) || 
+                          state.housingType === 'rural';
+    const recommendedVersion = needsMoreHeat ? 'performance' : 'eco';
+    
     // Calculate for all versions based on wall coverage
     const versions = Object.entries(HEATENE_VERSIONS).map(([key, version]) => {
         const versionFeet = Math.ceil(estimatedPerimeterFt * version.coveragePercent);
@@ -384,7 +390,8 @@ function calculate() {
             ...version,
             feet: versionFeet,
             watts: versionWatts,
-            equipmentCost: versionFeet * PRICE_PER_FOOT
+            equipmentCost: versionFeet * PRICE_PER_FOOT,
+            recommended: key === recommendedVersion
         };
     });
     
@@ -472,8 +479,8 @@ function displayResults(results) {
     
     // Version options
     const versionsHtml = results.versions.map(v => `
-        <div class="version-card ${v.key === 'performance' ? 'recommended' : ''}">
-            ${v.key === 'performance' ? '<span class="version-badge">Best Comfort</span>' : ''}
+        <div class="version-card ${v.recommended ? 'recommended' : ''}">
+            ${v.recommended ? '<span class="version-badge">Recommended</span>' : ''}
             <div class="version-name">${v.name}</div>
             <div class="version-feet">${v.feet} ft</div>
             <div class="version-watts">${v.watts.toLocaleString()}W</div>
