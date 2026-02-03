@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeatENE Calculator | Admin Parameters</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=20260203e">
+    <style>
+        /* Admin-specific styles */
+        .admin-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .admin-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .admin-header h1 {
+            color: var(--secondary);
+            margin: 0 0 0.5rem;
+        }
+        
+        .admin-header p {
+            color: var(--gray-500);
+            margin: 0;
+        }
+        
+        .admin-section {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .admin-section h2 {
+            font-size: 1.1rem;
+            color: var(--secondary);
+            margin: 0 0 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--gray-100);
+        }
+        
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .param-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .param-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+        }
+        
+        .param-input {
+            padding: 0.75rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        
+        .param-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .param-hint {
+            font-size: 0.75rem;
+            color: var(--gray-400);
+            margin-top: 0.25rem;
+        }
+        
+        .heating-system-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .heating-system-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+        }
+        
+        .heating-system-row .system-name {
+            font-weight: 600;
+            color: var(--gray-700);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .admin-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+        
+        .btn-save {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn-reset {
+            background: var(--white);
+            color: var(--gray-700);
+            border: 2px solid var(--gray-300);
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-reset:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+        
+        .save-message {
+            text-align: center;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .save-message.success {
+            background: linear-gradient(135deg, rgba(42, 157, 143, 0.1) 0%, rgba(42, 157, 143, 0.2) 100%);
+            color: var(--success);
+            display: block;
+        }
+        
+        .save-message.error {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.2) 100%);
+            color: #ef4444;
+            display: block;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gray-500);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .back-link:hover {
+            color: var(--primary);
+        }
+        
+        @media (max-width: 600px) {
+            .heating-system-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <img src="assets/logo.svg" alt="HeatENE" class="logo-img">
+            </div>
+            <div class="header-subtitle">Admin Parameters</div>
+        </header>
+
+        <!-- Admin Content -->
+        <div class="admin-container" id="adminContent" style="display: none;">
+            <a href="index.html" class="back-link">← Back to Calculator</a>
+            
+            <div class="admin-header">
+                <h1>Calculator Parameters</h1>
+                <p>Adjust pricing, rates, and efficiency factors used in calculations</p>
+            </div>
+
+            <!-- HeatENE Pricing -->
+            <div class="admin-section">
+                <h2>🏷️ HeatENE Pricing</h2>
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label class="param-label">Eco Price per Foot</label>
+                        <input type="number" class="param-input" id="ecoPricePerFoot" step="0.01" min="0">
+                        <span class="param-hint">Default: $29</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">Performance Price per Foot</label>
+                        <input type="number" class="param-input" id="performancePricePerFoot" step="0.01" min="0">
+                        <span class="param-hint">Default: $39</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">Watts per Foot</label>
+                        <input type="number" class="param-input" id="wattsPerFoot" step="0.1" min="0">
+                        <span class="param-hint">Default: 21W (70W/meter)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Energy Rates -->
+            <div class="admin-section">
+                <h2>⚡ Energy Rates</h2>
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label class="param-label">Electricity Rate ($/kWh)</label>
+                        <input type="number" class="param-input" id="electricityRate" step="0.001" min="0">
+                        <span class="param-hint">Default: $0.16/kWh (US average)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HeatENE Efficiency -->
+            <div class="admin-section">
+                <h2>📊 HeatENE Efficiency Factors</h2>
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label class="param-label">Zonal Savings (%)</label>
+                        <input type="number" class="param-input" id="zonalSavings" step="1" min="0" max="100">
+                        <span class="param-hint">Default: 25% (only heating occupied rooms)</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">Thermostat Efficiency (%)</label>
+                        <input type="number" class="param-input" id="thermostatEfficiency" step="1" min="0" max="100">
+                        <span class="param-hint">Default: 90% (precise control reduces waste)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heating System Costs -->
+            <div class="admin-section">
+                <h2>🔥 Competing Heating System Costs</h2>
+                <div class="heating-system-grid">
+                    <div class="heating-system-row">
+                        <div class="system-name">🔥 Gas Boiler</div>
+                        <div class="param-item">
+                            <label class="param-label">Cost/kWh ($)</label>
+                            <input type="number" class="param-input" id="gas_costPerKwh" step="0.001" min="0">
+                        </div>
+                        <div class="param-item">
+                            <label class="param-label">Annual Maintenance ($)</label>
+                            <input type="number" class="param-input" id="gas_maintenance" step="1" min="0">
+                        </div>
+                    </div>
+                    <div class="heating-system-row">
+                        <div class="system-name">🛢️ Oil Boiler</div>
+                        <div class="param-item">
+                            <label class="param-label">Cost/kWh ($)</label>
+                            <input type="number" class="param-input" id="oil_costPerKwh" step="0.001" min="0">
+                        </div>
+                        <div class="param-item">
+                            <label class="param-label">Annual Maintenance ($)</label>
+                            <input type="number" class="param-input" id="oil_maintenance" step="1" min="0">
+                        </div>
+                    </div>
+                    <div class="heating-system-row">
+                        <div class="system-name">♨️ Heat Pump</div>
+                        <div class="param-item">
+                            <label class="param-label">Cost/kWh ($)</label>
+                            <input type="number" class="param-input" id="heatpump_costPerKwh" step="0.001" min="0">
+                        </div>
+                        <div class="param-item">
+                            <label class="param-label">Annual Maintenance ($)</label>
+                            <input type="number" class="param-input" id="heatpump_maintenance" step="1" min="0">
+                        </div>
+                    </div>
+                    <div class="heating-system-row">
+                        <div class="system-name">⚡ Electric Radiators</div>
+                        <div class="param-item">
+                            <label class="param-label">Cost/kWh ($)</label>
+                            <input type="number" class="param-input" id="electric_costPerKwh" step="0.001" min="0">
+                        </div>
+                        <div class="param-item">
+                            <label class="param-label">Annual Maintenance ($)</label>
+                            <input type="number" class="param-input" id="electric_maintenance" step="1" min="0">
+                        </div>
+                    </div>
+                    <div class="heating-system-row">
+                        <div class="system-name">📏 Baseboard Heaters</div>
+                        <div class="param-item">
+                            <label class="param-label">Cost/kWh ($)</label>
+                            <input type="number" class="param-input" id="baseboard_costPerKwh" step="0.001" min="0">
+                        </div>
+                        <div class="param-item">
+                            <label class="param-label">Annual Maintenance ($)</label>
+                            <input type="number" class="param-input" id="baseboard_maintenance" step="1" min="0">
+                        </div>
+                    </div>
+                    <div class="heating-system-row">
+                        <div class="system-name">🪵 Wood/Pellet</div>
+                        <div class="param-item">
+                            <label class="param-label">Cost/kWh ($)</label>
+                            <input type="number" class="param-input" id="wood_costPerKwh" step="0.001" min="0">
+                        </div>
+                        <div class="param-item">
+                            <label class="param-label">Annual Maintenance ($)</label>
+                            <input type="number" class="param-input" id="wood_maintenance" step="1" min="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heat Loss Factors by Housing Type -->
+            <div class="admin-section">
+                <h2>🏠 Heat Loss by Housing Type</h2>
+                <p style="font-size: 0.85rem; color: var(--gray-500); margin: 0 0 1rem;">Watts per sq ft base requirement</p>
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label class="param-label">🏡 House</label>
+                        <input type="number" class="param-input" id="housing_house" step="0.1" min="0">
+                        <span class="param-hint">Default: 12 (moderate exposure)</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">🏘️ Townhouse</label>
+                        <input type="number" class="param-input" id="housing_townhouse" step="0.1" min="0">
+                        <span class="param-hint">Default: 10 (shared walls)</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">🏢 Apartment</label>
+                        <input type="number" class="param-input" id="housing_apartment" step="0.1" min="0">
+                        <span class="param-hint">Default: 8 (most insulated)</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">🏚️ Rural/Farmhouse</label>
+                        <input type="number" class="param-input" id="housing_rural" step="0.1" min="0">
+                        <span class="param-hint">Default: 15 (larger, more exposed)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Era Multipliers -->
+            <div class="admin-section">
+                <h2>📅 Era Multipliers</h2>
+                <p style="font-size: 0.85rem; color: var(--gray-500); margin: 0 0 1rem;">Multiplier for heat loss (older = higher)</p>
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label class="param-label">Pre-1920 (Historic)</label>
+                        <input type="number" class="param-input" id="era_pre1920" step="0.01" min="0">
+                        <span class="param-hint">Default: 1.35</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">1920-1950 (Pre-war)</label>
+                        <input type="number" class="param-input" id="era_1920-1950" step="0.01" min="0">
+                        <span class="param-hint">Default: 1.25</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">1950-1980 (Post-war)</label>
+                        <input type="number" class="param-input" id="era_1950-1980" step="0.01" min="0">
+                        <span class="param-hint">Default: 1.10</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">1980-2000 (Modern)</label>
+                        <input type="number" class="param-input" id="era_1980-2000" step="0.01" min="0">
+                        <span class="param-hint">Default: 1.00</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label">2000+ (Contemporary)</label>
+                        <input type="number" class="param-input" id="era_2000+" step="0.01" min="0">
+                        <span class="param-hint">Default: 0.85</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="admin-actions">
+                <button class="btn-save" onclick="saveParams()">💾 Save Parameters</button>
+                <button class="btn-reset" onclick="resetParams()">🔄 Reset to Defaults</button>
+            </div>
+            
+            <div id="saveMessage" class="save-message"></div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2026 HeatENE • Admin Panel</p>
+        </footer>
+    </div>
+
+    <script>
+        // Default parameters (same as app.js)
+        const DEFAULT_PARAMS = {
+            wattsPerFoot: 21,
+            electricityRate: 0.16,
+            housingHeatFactors: {
+                house: 12,
+                townhouse: 10,
+                apartment: 8,
+                rural: 15
+            },
+            eraMultipliers: {
+                'pre1920': 1.35,
+                '1920-1950': 1.25,
+                '1950-1980': 1.10,
+                '1980-2000': 1.00,
+                '2000+': 0.85
+            },
+            ecoPricePerFoot: 29,
+            performancePricePerFoot: 39,
+            zonalSavings: 0.25,
+            thermostatEfficiency: 0.90,
+            heatingCosts: {
+                gas: { costPerKwh: 0.07, maintenance: 200 },
+                oil: { costPerKwh: 0.14, maintenance: 300 },
+                heatpump: { costPerKwh: 0.08, maintenance: 200 },
+                electric: { costPerKwh: 0.16, maintenance: 0 },
+                baseboard: { costPerKwh: 0.16, maintenance: 0 },
+                wood: { costPerKwh: 0.10, maintenance: 150 }
+            }
+        };
+
+        // Password protection
+        function checkPassword() {
+            const password = prompt('Enter admin password:');
+            if (password === 'heatene2026') {
+                document.getElementById('adminContent').style.display = 'block';
+                loadParams();
+            } else if (password !== null) {
+                alert('Incorrect password.');
+                window.location.href = 'index.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Load parameters into form
+        function loadParams() {
+            let params;
+            try {
+                const stored = localStorage.getItem('heateneParams');
+                params = stored ? JSON.parse(stored) : DEFAULT_PARAMS;
+            } catch (e) {
+                params = DEFAULT_PARAMS;
+            }
+
+            // Fill in all fields
+            document.getElementById('ecoPricePerFoot').value = params.ecoPricePerFoot || DEFAULT_PARAMS.ecoPricePerFoot;
+            document.getElementById('performancePricePerFoot').value = params.performancePricePerFoot || DEFAULT_PARAMS.performancePricePerFoot;
+            document.getElementById('wattsPerFoot').value = params.wattsPerFoot || DEFAULT_PARAMS.wattsPerFoot;
+            document.getElementById('electricityRate').value = params.electricityRate || DEFAULT_PARAMS.electricityRate;
+            document.getElementById('zonalSavings').value = (params.zonalSavings || DEFAULT_PARAMS.zonalSavings) * 100;
+            document.getElementById('thermostatEfficiency').value = (params.thermostatEfficiency || DEFAULT_PARAMS.thermostatEfficiency) * 100;
+
+            // Heating systems
+            const systems = ['gas', 'oil', 'heatpump', 'electric', 'baseboard', 'wood'];
+            systems.forEach(sys => {
+                const costs = params.heatingCosts?.[sys] || DEFAULT_PARAMS.heatingCosts[sys];
+                document.getElementById(`${sys}_costPerKwh`).value = costs.costPerKwh;
+                document.getElementById(`${sys}_maintenance`).value = costs.maintenance;
+            });
+
+            // Housing factors
+            const housingTypes = ['house', 'townhouse', 'apartment', 'rural'];
+            housingTypes.forEach(type => {
+                const factor = params.housingHeatFactors?.[type] || DEFAULT_PARAMS.housingHeatFactors[type];
+                document.getElementById(`housing_${type}`).value = factor;
+            });
+
+            // Era multipliers
+            const eras = ['pre1920', '1920-1950', '1950-1980', '1980-2000', '2000+'];
+            eras.forEach(era => {
+                const mult = params.eraMultipliers?.[era] || DEFAULT_PARAMS.eraMultipliers[era];
+                document.getElementById(`era_${era}`).value = mult;
+            });
+        }
+
+        // Save parameters to localStorage
+        function saveParams() {
+            try {
+                const params = {
+                    ecoPricePerFoot: parseFloat(document.getElementById('ecoPricePerFoot').value),
+                    performancePricePerFoot: parseFloat(document.getElementById('performancePricePerFoot').value),
+                    wattsPerFoot: parseFloat(document.getElementById('wattsPerFoot').value),
+                    electricityRate: parseFloat(document.getElementById('electricityRate').value),
+                    zonalSavings: parseFloat(document.getElementById('zonalSavings').value) / 100,
+                    thermostatEfficiency: parseFloat(document.getElementById('thermostatEfficiency').value) / 100,
+                    heatingCosts: {},
+                    housingHeatFactors: {},
+                    eraMultipliers: {}
+                };
+
+                // Heating systems
+                const systems = ['gas', 'oil', 'heatpump', 'electric', 'baseboard', 'wood'];
+                systems.forEach(sys => {
+                    params.heatingCosts[sys] = {
+                        costPerKwh: parseFloat(document.getElementById(`${sys}_costPerKwh`).value),
+                        maintenance: parseFloat(document.getElementById(`${sys}_maintenance`).value)
+                    };
+                });
+
+                // Housing factors
+                const housingTypes = ['house', 'townhouse', 'apartment', 'rural'];
+                housingTypes.forEach(type => {
+                    params.housingHeatFactors[type] = parseFloat(document.getElementById(`housing_${type}`).value);
+                });
+
+                // Era multipliers
+                const eras = ['pre1920', '1920-1950', '1950-1980', '1980-2000', '2000+'];
+                eras.forEach(era => {
+                    params.eraMultipliers[era] = parseFloat(document.getElementById(`era_${era}`).value);
+                });
+
+                localStorage.setItem('heateneParams', JSON.stringify(params));
+                
+                const msg = document.getElementById('saveMessage');
+                msg.textContent = '✓ Parameters saved successfully! Changes will apply to all new calculations.';
+                msg.className = 'save-message success';
+                
+                setTimeout(() => {
+                    msg.className = 'save-message';
+                }, 3000);
+            } catch (e) {
+                const msg = document.getElementById('saveMessage');
+                msg.textContent = '✗ Error saving parameters: ' + e.message;
+                msg.className = 'save-message error';
+            }
+        }
+
+        // Reset to defaults
+        function resetParams() {
+            if (confirm('Reset all parameters to default values? This cannot be undone.')) {
+                localStorage.removeItem('heateneParams');
+                loadParams();
+                
+                const msg = document.getElementById('saveMessage');
+                msg.textContent = '✓ Parameters reset to defaults.';
+                msg.className = 'save-message success';
+                
+                setTimeout(() => {
+                    msg.className = 'save-message';
+                }, 3000);
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', checkPassword);
+    </script>
+</body>
+</html>

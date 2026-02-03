@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260203d">
+    <link rel="stylesheet" href="styles.css?v=20260203e">
 </head>
 <body>
     <div class="app-container">
@@ -277,13 +277,36 @@
                     </div>
                 </div>
 
+                <!-- PDF & Email Section -->
+                <div class="quote-actions">
+                    <h3>Get Your Quote</h3>
+                    <div class="quote-buttons">
+                        <button class="btn-primary btn-pdf" onclick="downloadPDF()">
+                            📄 Download PDF Quote
+                        </button>
+                    </div>
+                    
+                    <div class="email-quote-section">
+                        <p class="email-label">Or email it to yourself:</p>
+                        <div class="email-form">
+                            <input type="email" id="customerEmail" class="form-input email-input" placeholder="your@email.com">
+                            <button id="sendEmailBtn" class="btn-primary btn-email" onclick="sendQuoteEmail()">
+                                ✉️ Email My Quote
+                            </button>
+                        </div>
+                        <div id="emailSuccess" class="email-success" style="display: none;">
+                            ✓ Quote sent! Check your inbox and download your PDF.
+                        </div>
+                    </div>
+                </div>
+
                 <!-- CTA -->
                 <div class="cta-section">
                     <button class="btn-secondary" onclick="startOver()">
                         ← Recalculate
                     </button>
-                    <a href="mailto:info@heatene.com?subject=HeatENE Quote Request" class="btn-primary">
-                        Get a Detailed Quote
+                    <a href="mailto:warmth@heatene.com?subject=HeatENE Quote Request" class="btn-primary">
+                        Contact Us
                     </a>
                 </div>
             </section>
@@ -295,6 +318,7 @@
         </footer>
     </div>
 
-    <script src="app.js?v=20260203d"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="app.js?v=20260203e"></script>
 </body>
 </html>
