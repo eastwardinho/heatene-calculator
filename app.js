@@ -88,25 +88,22 @@ const HEATING_COSTS = {
     }
 };
 
-// HeatENE versions
+// HeatENE coverage options (same 70W/m product, different wall coverage)
 const HEATENE_VERSIONS = {
     eco: {
-        name: 'HeatENE Eco',
-        wattsPerFoot: 14,       // Lower output for mild climates
-        pricePerFoot: 14.50,
-        description: 'Best for mild climates & well-insulated homes'
+        name: 'Eco',
+        coveragePercent: 0.50,   // 2 opposite walls (~50% of perimeter)
+        description: '2 longest walls — mild climates, well-insulated'
     },
     standard: {
-        name: 'HeatENE Standard',
-        wattsPerFoot: 21,       // 70W per meter
-        pricePerFoot: 17.50,
-        description: 'Ideal for most homes'
+        name: 'Standard',
+        coveragePercent: 0.75,   // Based on heat loss calculation
+        description: 'Calculated coverage — most homes'
     },
     performance: {
-        name: 'HeatENE Performance',
-        wattsPerFoot: 30,       // Higher output for cold climates
-        pricePerFoot: 21.50,
-        description: 'Best for cold climates & older homes'
+        name: 'Performance',
+        coveragePercent: 1.0,    // All walls (full perimeter)
+        description: 'All walls — cold climates, older homes'
     }
 };
 
@@ -378,14 +375,21 @@ function calculate() {
     // Calculate savings
     const annualSavings = currentAnnualCost - heateneAnnualCost;
     
-    // Calculate for all versions
+    // Estimate room perimeter based on sq ft (assuming ~1.2:1 aspect ratio typical room)
+    // Perimeter ≈ 2 * (L + W) where L*W = sqft and L/W ≈ 1.2
+    // Simplified: perimeter in feet ≈ 4.4 * sqrt(sqft)
+    const estimatedPerimeterFt = 4.4 * Math.sqrt(state.sqft);
+    
+    // Calculate for all versions based on wall coverage
     const versions = Object.entries(HEATENE_VERSIONS).map(([key, version]) => {
-        const versionFeet = Math.ceil(wattsNeeded / version.wattsPerFoot);
+        const versionFeet = Math.ceil(estimatedPerimeterFt * version.coveragePercent);
+        const versionWatts = versionFeet * WATTS_PER_FOOT;
         return {
             key,
             ...version,
             feet: versionFeet,
-            equipmentCost: versionFeet * version.pricePerFoot
+            watts: versionWatts,
+            equipmentCost: versionFeet * PRICE_PER_FOOT
         };
     });
     
@@ -477,6 +481,7 @@ function displayResults(results) {
             ${v.key === 'standard' ? '<span class="version-badge">Recommended</span>' : ''}
             <div class="version-name">${v.name}</div>
             <div class="version-feet">${v.feet} ft</div>
+            <div class="version-watts">${v.watts.toLocaleString()}W</div>
             <div class="version-price">$${Math.round(v.equipmentCost).toLocaleString()}</div>
             <div class="version-desc">${v.description}</div>
         </div>
