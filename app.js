@@ -499,6 +499,8 @@ function displayResults(results) {
 }
 
 function selectVersion(versionKey) {
+    console.log('selectVersion called with:', versionKey);
+    
     // Update selected state
     document.querySelectorAll('.version-card').forEach(card => {
         card.classList.remove('selected');
@@ -507,6 +509,7 @@ function selectVersion(versionKey) {
     
     // Find version and update display
     const version = window.calculatedVersions.find(v => v.key === versionKey);
+    console.log('Found version:', version);
     if (version) {
         updateSavingsDisplay(version);
         
