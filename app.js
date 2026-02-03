@@ -15,9 +15,10 @@ let state = {
 
 // ============ CONSTANTS ============
 
-// HeatENE specs (Standard version as default)
-const WATTS_PER_FOOT = 21;  // Standard: 70W per meter
-const PRICE_PER_FOOT = 17.50;
+// HeatENE specs
+const WATTS_PER_FOOT = 21;      // 70W per meter
+const PRICE_PER_METER = 12;     // $12/meter product cost
+const PRICE_PER_FOOT = PRICE_PER_METER / 3.281;  // ~$3.66/ft
 
 // Average electricity rate (US)
 const ELECTRICITY_RATE = 0.16; // $/kWh
