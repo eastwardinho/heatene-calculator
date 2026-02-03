@@ -16,9 +16,7 @@ let state = {
 // ============ CONSTANTS ============
 
 // HeatENE specs
-const WATTS_PER_FOOT = 21;      // 70W per meter
-const PRICE_PER_METER = 12;     // $12/meter product cost
-const PRICE_PER_FOOT = PRICE_PER_METER / 3.281;  // ~$3.66/ft
+const WATTS_PER_FOOT = 21;      // 70W per meter (21W per foot)
 
 // Average electricity rate (US)
 const ELECTRICITY_RATE = 0.16; // $/kWh
@@ -94,13 +92,13 @@ const HEATENE_VERSIONS = {
     eco: {
         name: 'Eco',
         coveragePercent: 0.60,   // 2 opposite walls = 60% of full power
-        pricePerMeter: 9.5,      // $9.5/meter
+        pricePerFoot: 29,        // $29/ft selling price
         description: '2 longest walls — great for mild climates'
     },
     performance: {
         name: 'Performance',
         coveragePercent: 1.0,    // All walls = 100% power
-        pricePerMeter: 12,       // $12/meter
+        pricePerFoot: 39,        // $39/ft selling price
         description: 'All walls — recommended for cold climates'
     }
 };
@@ -387,15 +385,13 @@ function calculate() {
     // Calculate for all versions based on wall coverage
     const versions = Object.entries(HEATENE_VERSIONS).map(([key, version]) => {
         const versionFeet = Math.ceil(estimatedPerimeterFt * version.coveragePercent);
-        const versionMeters = versionFeet / 3.281;
         const versionWatts = versionFeet * WATTS_PER_FOOT;
         return {
             key,
             ...version,
             feet: versionFeet,
-            meters: versionMeters,
             watts: versionWatts,
-            equipmentCost: versionMeters * version.pricePerMeter,
+            equipmentCost: versionFeet * version.pricePerFoot,
             recommended: key === recommendedVersion
         };
     });
