@@ -659,6 +659,13 @@ body {
     margin: 0 0 1rem;
 }
 
+.diy-note {
+    font-size: 0.85rem;
+    color: var(--success);
+    margin: 1rem 0 0;
+    text-align: center;
+}
+
 .version-options {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
