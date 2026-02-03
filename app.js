@@ -94,11 +94,13 @@ const HEATENE_VERSIONS = {
     eco: {
         name: 'Eco',
         coveragePercent: 0.60,   // 2 opposite walls = 60% of full power
+        pricePerMeter: 9.5,      // $9.5/meter
         description: '2 longest walls — milder climates, well-insulated homes'
     },
     performance: {
         name: 'Performance',
         coveragePercent: 1.0,    // All walls = 100% power
+        pricePerMeter: 12,       // $12/meter
         description: 'All walls — colder climates, older or larger homes'
     }
 };
@@ -385,13 +387,15 @@ function calculate() {
     // Calculate for all versions based on wall coverage
     const versions = Object.entries(HEATENE_VERSIONS).map(([key, version]) => {
         const versionFeet = Math.ceil(estimatedPerimeterFt * version.coveragePercent);
+        const versionMeters = versionFeet / 3.281;
         const versionWatts = versionFeet * WATTS_PER_FOOT;
         return {
             key,
             ...version,
             feet: versionFeet,
+            meters: versionMeters,
             watts: versionWatts,
-            equipmentCost: versionFeet * PRICE_PER_FOOT,
+            equipmentCost: versionMeters * version.pricePerMeter,
             recommended: key === recommendedVersion
         };
     });
