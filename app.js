@@ -534,6 +534,7 @@ function updateSavingsDisplay(version) {
         savingsRow.classList.remove('positive', 'negative');
         savingsRow.innerHTML = `<span class="savings-text">Similar running costs — but HeatENE offers zero maintenance and 10-year warranty.</span>`;
     }
+}
 
 // ============ INITIALIZE ============
 
