@@ -11,6 +11,7 @@ let state = {
     bedrooms: null,
     bathrooms: null,
     sqft: null,
+    climateZone: null,
     currentHeating: null
 };
 
@@ -38,6 +39,14 @@ const DEFAULT_PARAMS = {
         '1950-1980': 1.10,  // Post-war - improving standards
         '1980-2000': 1.00,  // Modern - decent insulation
         '2000+': 0.85       // Contemporary - good insulation
+    },
+    
+    // Climate zone parameters (days, hours/day, duty cycle)
+    climateZones: {
+        mild: { days: 150, hours: 5, duty: 0.40, name: 'Mild', desc: 'Southern states' },
+        moderate: { days: 180, hours: 6, duty: 0.50, name: 'Moderate', desc: 'Mid-Atlantic' },
+        cold: { days: 210, hours: 8, duty: 0.60, name: 'Cold', desc: 'Northern states' },
+        verycold: { days: 240, hours: 10, duty: 0.70, name: 'Very Cold', desc: 'Minnesota, Alaska' }
     },
     
     // HeatENE version pricing
@@ -299,6 +308,17 @@ function selectHeating(element) {
     state.currentHeating = element.dataset.value;
 }
 
+function selectClimate(element) {
+    // Remove selection from all
+    document.querySelectorAll('.climate-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Select clicked
+    element.classList.add('selected');
+    state.climateZone = element.dataset.value;
+}
+
 function toggleCalcInfo() {
     const details = document.getElementById('calcDetails');
     const icon = document.getElementById('toggleIcon');
@@ -320,12 +340,14 @@ function startOver() {
         bedrooms: null,
         bathrooms: null,
         sqft: null,
+        climateZone: null,
         currentHeating: null
     };
     
     // Reset UI
     document.querySelectorAll('.housing-card').forEach(c => c.classList.remove('selected'));
     document.querySelectorAll('.heating-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.climate-card').forEach(c => c.classList.remove('selected'));
     document.querySelectorAll('.era-btn').forEach(b => b.classList.remove('selected'));
     document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('sqft').value = '';
@@ -382,10 +404,16 @@ function validate() {
         state.sqft = sqft;
     }
     
+    // Climate zone
+    if (!state.climateZone) {
+        valid = false;
+        showError('q6', 'Please select your climate zone');
+    }
+    
     // Current heating
     if (!state.currentHeating) {
         valid = false;
-        showError('q6', 'Please select your current heating system');
+        showError('q7', 'Please select your current heating system');
     }
     
     return valid;
@@ -444,9 +472,16 @@ function calculate() {
         feet: Math.ceil((room.sqft / state.sqft) * totalFeet)
     }));
     
+    // Get climate zone data for annual calculations
+    const climateZones = params.climateZones;
+    const climate = climateZones[state.climateZone];
+    const heatingDays = climate.days;
+    const hoursPerDay = climate.hours;
+    const dutyCycle = climate.duty;
+    
     // Estimate annual heat energy needed (kWh)
-    // Assume 6 hours/day average, 180 heating days, 50% thermostat duty cycle
-    const annualKwh = (wattsNeeded / 1000) * 6 * 180 * 0.5;
+    // Uses climate zone specific: days, hours/day, duty cycle
+    const annualKwh = (wattsNeeded / 1000) * hoursPerDay * heatingDays * dutyCycle;
     
     // Current heating annual cost (whole-house heating, no zonal control)
     const currentSystem = heatingCosts[state.currentHeating];
@@ -479,8 +514,8 @@ function calculate() {
     // Calculate for all versions (same footage, different heat output and price)
     const versions = Object.entries(heateneVersions).map(([key, version]) => {
         const versionWatts = Math.round(fullPerimeterFt * wattsPerFoot * version.heatOutput);
-        // Running cost based on actual heat output
-        const versionEffectiveKwh = (versionWatts / 1000) * 6 * 180 * 0.5 * (1 - zonalSavings) * thermostatEfficiency;
+        // Running cost based on actual heat output, using climate zone values
+        const versionEffectiveKwh = (versionWatts / 1000) * hoursPerDay * heatingDays * dutyCycle * (1 - zonalSavings) * thermostatEfficiency;
         const versionAnnualCost = versionEffectiveKwh * electricityRate;
         const versionSavings = currentAnnualCost - versionAnnualCost;
         
@@ -521,7 +556,8 @@ function calculate() {
         versions,
         allSystemsComparison,
         annualKwh,
-        params
+        params,
+        climate
     };
     
     // Display results
@@ -910,6 +946,36 @@ function generatePDF() {
     });
     
     y += 60;
+    
+    // Trust Badges Section
+    if (y > 230) {
+        doc.addPage();
+        y = 20;
+    }
+    
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(margin, y, contentWidth, 35, 3, 3, 'F');
+    
+    doc.setTextColor(...darkBlue);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Why Choose HeatENE?', margin + 10, y + 10);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...gray);
+    
+    const trustCol1 = margin + 10;
+    const trustCol2 = margin + 65;
+    const trustCol3 = margin + 120;
+    
+    doc.text('✓ 10-Year Warranty', trustCol1, y + 20);
+    doc.text('✓ UL Listed (Safety)', trustCol2, y + 20);
+    doc.text('✓ IPX5 Water Rated', trustCol3, y + 20);
+    
+    doc.text('✓ 99.69% Efficiency', trustCol1, y + 28);
+    doc.text('✓ Zero Maintenance', trustCol2, y + 28);
+    doc.text('✓ Made in USA', trustCol3, y + 28);
     
     // Footer
     doc.setFillColor(...orange);
