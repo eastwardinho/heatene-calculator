@@ -341,9 +341,6 @@ function calculate() {
     // Convert to linear feet of HeatENE baseboard
     const totalFeet = Math.ceil(wattsNeeded / WATTS_PER_FOOT);
     
-    // Calculate costs
-    const equipmentCost = totalFeet * PRICE_PER_FOOT;
-    
     // Get room breakdown
     const rooms = getRoomBreakdown(state.bedrooms, state.bathrooms, state.sqft);
     
@@ -400,7 +397,6 @@ function calculate() {
     displayResults({
         totalFeet,
         totalWatts: Math.round(wattsNeeded),
-        equipmentCost,
         rooms: roomsWithFeet,
         heateneAnnualCost,
         currentAnnualCost,
@@ -432,10 +428,13 @@ function displayResults(results) {
     document.getElementById('resultsSqft').textContent = state.sqft.toLocaleString();
     document.getElementById('resultsType').textContent = typeNames[state.housingType];
     
+    // Get recommended version for main display
+    const recommendedVersion = results.versions.find(v => v.recommended) || results.versions[0];
+    
     // Update main result
-    document.getElementById('totalFeet').textContent = results.totalFeet;
-    document.getElementById('totalWatts').textContent = results.totalWatts.toLocaleString() + 'W';
-    document.getElementById('estimatedCost').textContent = '$' + Math.round(results.equipmentCost).toLocaleString();
+    document.getElementById('totalFeet').textContent = recommendedVersion.feet;
+    document.getElementById('totalWatts').textContent = recommendedVersion.watts.toLocaleString() + 'W';
+    document.getElementById('estimatedCost').textContent = '$' + Math.round(recommendedVersion.equipmentCost).toLocaleString();
     document.getElementById('roomCount').textContent = results.rooms.length;
     
     // Room breakdown
