@@ -95,13 +95,13 @@ const HEATENE_VERSIONS = {
         name: 'Eco',
         coveragePercent: 0.60,   // 2 opposite walls = 60% of full power
         pricePerMeter: 9.5,      // $9.5/meter
-        description: '2 longest walls — milder climates, well-insulated homes'
+        description: '2 longest walls — great for mild climates'
     },
     performance: {
         name: 'Performance',
         coveragePercent: 1.0,    // All walls = 100% power
         pricePerMeter: 12,       // $12/meter
-        description: 'All walls — colder climates, older or larger homes'
+        description: 'All walls — recommended for cold climates'
     }
 };
 

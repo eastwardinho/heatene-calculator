@@ -650,6 +650,12 @@ body {
 .versions-section h3 {
     font-size: 1rem;
     color: var(--secondary);
+    margin: 0 0 0.5rem;
+}
+
+.versions-note {
+    font-size: 0.85rem;
+    color: var(--gray-500);
     margin: 0 0 1rem;
 }
 
