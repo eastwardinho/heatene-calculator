@@ -1,5 +1,6 @@
 /* ====================================
    HeatENE Calculator - Simplified Logic
+   Version: 2026-02-03-v2
    ==================================== */
 
 // ============ STATE ============
@@ -325,9 +326,12 @@ function showError(questionId, message) {
 // ============ CALCULATION ============
 
 function calculate() {
+    console.log('Calculate clicked, state:', JSON.stringify(state));
     if (!validate()) {
+        console.log('Validation failed');
         return;
     }
+    console.log('Validation passed');
     
     // Get base heat factor for housing type
     const baseHeatFactor = HOUSING_HEAT_FACTORS[state.housingType];
@@ -409,6 +413,7 @@ function calculate() {
 // ============ DISPLAY RESULTS ============
 
 function displayResults(results) {
+    console.log('displayResults called with:', results);
     // Hide calculator, show results
     document.getElementById('calculator').style.display = 'none';
     document.getElementById('results').style.display = 'block';
