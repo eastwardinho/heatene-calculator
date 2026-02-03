@@ -88,19 +88,19 @@ const HEATING_COSTS = {
     }
 };
 
-// HeatENE installation options (same 70W/m product, different wall coverage)
+// HeatENE installation options (aluminum on all walls, heating film varies)
 const HEATENE_VERSIONS = {
     eco: {
         name: 'Eco',
-        coveragePercent: 0.60,   // 2 opposite walls = 60% of full power
-        pricePerFoot: 29,        // $29/ft selling price
-        description: '2 longest walls — great for mild climates'
+        heatOutput: 0.60,        // Heating film on 2 longest walls = 60% heat output
+        pricePerFoot: 29,        // $29/ft (less heating film inside)
+        description: 'Heating on 2 longest walls — great for mild climates'
     },
     performance: {
         name: 'Performance',
-        coveragePercent: 1.0,    // All walls = 100% power
-        pricePerFoot: 39,        // $39/ft selling price
-        description: 'All walls — recommended for cold climates'
+        heatOutput: 1.0,         // Heating film on all walls = 100% heat output
+        pricePerFoot: 39,        // $39/ft (full heating film)
+        description: 'Heating on all walls — recommended for cold climates'
     }
 };
 
@@ -383,16 +383,25 @@ function calculate() {
                           state.housingType === 'rural';
     const recommendedVersion = needsMoreHeat ? 'performance' : 'eco';
     
-    // Calculate for all versions based on wall coverage
+    // Both versions cover full perimeter (aluminum everywhere)
+    const fullPerimeterFt = Math.ceil(estimatedPerimeterFt);
+    
+    // Calculate for all versions (same footage, different heat output and price)
     const versions = Object.entries(HEATENE_VERSIONS).map(([key, version]) => {
-        const versionFeet = Math.ceil(estimatedPerimeterFt * version.coveragePercent);
-        const versionWatts = versionFeet * WATTS_PER_FOOT;
+        const versionWatts = Math.round(fullPerimeterFt * WATTS_PER_FOOT * version.heatOutput);
+        // Running cost based on actual heat output
+        const versionEffectiveKwh = (versionWatts / 1000) * 6 * 180 * 0.5 * (1 - HEATENE_ZONAL_SAVINGS) * HEATENE_THERMOSTAT_EFFICIENCY;
+        const versionAnnualCost = versionEffectiveKwh * ELECTRICITY_RATE;
+        const versionSavings = currentAnnualCost - versionAnnualCost;
+        
         return {
             key,
             ...version,
-            feet: versionFeet,
+            feet: fullPerimeterFt,
             watts: versionWatts,
-            equipmentCost: versionFeet * version.pricePerFoot,
+            equipmentCost: fullPerimeterFt * version.pricePerFoot,
+            annualCost: versionAnnualCost,
+            annualSavings: versionSavings,
             recommended: key === recommendedVersion
         };
     });
@@ -458,44 +467,73 @@ function displayResults(results) {
     
     document.getElementById('roomBreakdown').innerHTML = breakdownHtml;
     
-    // Cost comparison
+    // Cost comparison - current heating
     document.getElementById('currentHeatingIcon').textContent = results.currentSystem.icon;
     document.getElementById('currentHeatingName').textContent = results.currentSystem.name;
     document.getElementById('currentAnnualCost').textContent = '$' + Math.round(results.currentAnnualCost).toLocaleString() + '/yr';
-    document.getElementById('heateneAnnualCost').textContent = '$' + Math.round(results.heateneAnnualCost).toLocaleString() + '/yr';
     
-    // Savings display
-    const savingsRow = document.getElementById('savingsRow');
-    const annualSavingsEl = document.getElementById('annualSavings');
+    // Store versions globally for click handler
+    window.calculatedVersions = results.versions;
+    window.currentSystem = results.currentSystem;
+    window.currentAnnualCost = results.currentAnnualCost;
     
-    if (results.annualSavings > 0) {
-        savingsRow.classList.remove('negative');
-        savingsRow.classList.add('positive');
-        annualSavingsEl.textContent = '$' + Math.round(results.annualSavings).toLocaleString();
-        savingsRow.innerHTML = `<span class="savings-text">You could save <strong id="annualSavings">$${Math.round(results.annualSavings).toLocaleString()}</strong> per year!</span>`;
-    } else if (results.annualSavings < 0) {
-        savingsRow.classList.remove('positive');
-        savingsRow.classList.add('negative');
-        savingsRow.innerHTML = `<span class="savings-text">HeatENE costs <strong>$${Math.round(Math.abs(results.annualSavings)).toLocaleString()}</strong> more per year, but offers zero maintenance and 10-year warranty.</span>`;
-    } else {
-        savingsRow.classList.remove('positive', 'negative');
-        savingsRow.innerHTML = `<span class="savings-text">Similar running costs — but HeatENE offers zero maintenance and 10-year warranty.</span>`;
-    }
-    
-    // Version options
+    // Version options (clickable)
     const versionsHtml = results.versions.map(v => `
-        <div class="version-card ${v.recommended ? 'recommended' : ''}">
+        <div class="version-card ${v.recommended ? 'recommended selected' : ''}" onclick="selectVersion('${v.key}')" data-version="${v.key}">
             ${v.recommended ? '<span class="version-badge">Recommended</span>' : ''}
             <div class="version-name">${v.name}</div>
             <div class="version-feet">${v.feet} ft</div>
-            <div class="version-watts">${v.watts.toLocaleString()}W</div>
+            <div class="version-watts">${v.watts.toLocaleString()}W output</div>
             <div class="version-price">$${Math.round(v.equipmentCost).toLocaleString()}</div>
             <div class="version-desc">${v.description}</div>
         </div>
     `).join('');
     
     document.getElementById('versionOptions').innerHTML = versionsHtml;
+    
+    // Show savings for recommended version initially
+    const recommendedV = results.versions.find(v => v.recommended);
+    if (recommendedV) {
+        updateSavingsDisplay(recommendedV);
+    }
 }
+
+function selectVersion(versionKey) {
+    // Update selected state
+    document.querySelectorAll('.version-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    document.querySelector(`.version-card[data-version="${versionKey}"]`).classList.add('selected');
+    
+    // Find version and update display
+    const version = window.calculatedVersions.find(v => v.key === versionKey);
+    if (version) {
+        updateSavingsDisplay(version);
+        
+        // Also update main result display
+        document.getElementById('totalFeet').textContent = version.feet;
+        document.getElementById('totalWatts').textContent = version.watts.toLocaleString() + 'W';
+        document.getElementById('estimatedCost').textContent = '$' + Math.round(version.equipmentCost).toLocaleString();
+    }
+}
+
+function updateSavingsDisplay(version) {
+    document.getElementById('heateneAnnualCost').textContent = '$' + Math.round(version.annualCost).toLocaleString() + '/yr';
+    
+    const savingsRow = document.getElementById('savingsRow');
+    
+    if (version.annualSavings > 0) {
+        savingsRow.classList.remove('negative');
+        savingsRow.classList.add('positive');
+        savingsRow.innerHTML = `<span class="savings-text">You could save <strong>$${Math.round(version.annualSavings).toLocaleString()}</strong> per year!</span>`;
+    } else if (version.annualSavings < 0) {
+        savingsRow.classList.remove('positive');
+        savingsRow.classList.add('negative');
+        savingsRow.innerHTML = `<span class="savings-text">HeatENE costs <strong>$${Math.round(Math.abs(version.annualSavings)).toLocaleString()}</strong> more per year, but offers zero maintenance and 10-year warranty.</span>`;
+    } else {
+        savingsRow.classList.remove('positive', 'negative');
+        savingsRow.innerHTML = `<span class="savings-text">Similar running costs — but HeatENE offers zero maintenance and 10-year warranty.</span>`;
+    }
 
 // ============ INITIALIZE ============
 
