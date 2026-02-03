@@ -655,11 +655,11 @@ body {
 
 .version-options {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 480px) {
     .version-options {
         grid-template-columns: 1fr;
     }

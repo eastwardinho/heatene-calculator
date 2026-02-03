@@ -88,22 +88,17 @@ const HEATING_COSTS = {
     }
 };
 
-// HeatENE coverage options (same 70W/m product, different wall coverage)
+// HeatENE installation options (same 70W/m product, different wall coverage)
 const HEATENE_VERSIONS = {
     eco: {
         name: 'Eco',
-        coveragePercent: 0.50,   // 2 opposite walls (~50% of perimeter)
-        description: '2 longest walls — mild climates, well-insulated'
-    },
-    standard: {
-        name: 'Standard',
-        coveragePercent: 0.75,   // Based on heat loss calculation
-        description: 'Calculated coverage — most homes'
+        coveragePercent: 0.60,   // 2 opposite walls = 60% of full power
+        description: '2 longest walls — milder climates, well-insulated homes'
     },
     performance: {
         name: 'Performance',
-        coveragePercent: 1.0,    // All walls (full perimeter)
-        description: 'All walls — cold climates, older homes'
+        coveragePercent: 1.0,    // All walls = 100% power
+        description: 'All walls — colder climates, older or larger homes'
     }
 };
 
@@ -477,8 +472,8 @@ function displayResults(results) {
     
     // Version options
     const versionsHtml = results.versions.map(v => `
-        <div class="version-card ${v.key === 'standard' ? 'recommended' : ''}">
-            ${v.key === 'standard' ? '<span class="version-badge">Recommended</span>' : ''}
+        <div class="version-card ${v.key === 'performance' ? 'recommended' : ''}">
+            ${v.key === 'performance' ? '<span class="version-badge">Best Comfort</span>' : ''}
             <div class="version-name">${v.name}</div>
             <div class="version-feet">${v.feet} ft</div>
             <div class="version-watts">${v.watts.toLocaleString()}W</div>
