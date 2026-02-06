@@ -52,8 +52,8 @@ const DEFAULT_PARAMS = {
     },
     
     // HeatENE version pricing
-    ecoPricePerFoot: 29,
-    performancePricePerFoot: 39,
+    ecoPricePerFoot: 25,
+    performancePricePerFoot: 29,
     
     // HeatENE efficiency advantages
     zonalSavings: 0.25,  // 25% savings from only heating occupied rooms
